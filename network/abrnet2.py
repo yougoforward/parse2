@@ -26,14 +26,14 @@ class DecoderModule(nn.Module):
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
-        self.conv4 = nn.Conv2d(512, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
+        self.conv4 = nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
 
         self.alpha = nn.Parameter(torch.ones(1))
-        self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
-                                 nn.Conv2d(256, 256, 1, bias=False), InPlaceABNSync(256))
-        self.se = nn.Sequential(
-                            nn.Conv2d(256, 256, 1, bias=True),
-                            nn.Sigmoid())
+        # self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
+        #                          nn.Conv2d(256, 256, 1, bias=False), InPlaceABNSync(256))
+        # self.se = nn.Sequential(
+        #                     nn.Conv2d(256, 256, 1, bias=True),
+        #                     nn.Sigmoid())
 
     def forward(self, xt, xm, xl):
         _, _, h, w = xm.size()
@@ -44,10 +44,10 @@ class DecoderModule(nn.Module):
         xl = self.conv2(xl)
         x = torch.cat([xt, xl], dim=1)
         x_fea = self.conv3(x)
-        gp = self.gap(x_fea)
-        se = self.se(gp)
-        out = torch.cat([x_fea+se*x_fea, gp.expand_as(x_fea)], dim=1)
-        x_seg = self.conv4(out)
+        # gp = self.gap(x_fea)
+        # se = self.se(gp)
+        # out = torch.cat([x_fea+se*x_fea, gp.expand_as(x_fea)], dim=1)
+        x_seg = self.conv4(x_fea)
         return x_seg, xt_fea
 
 
@@ -57,17 +57,18 @@ class AlphaHBDecoder(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False), 
+                                   BatchNorm2d(256), nn.ReLU(inplace=False),
+                                   SEModule(256, reduction=16) 
                                    )
                                    
-        self.cls_hb = nn.Conv2d(512, hbody_cls, kernel_size=1, padding=0, stride=1, bias=True)
+        self.cls_hb = nn.Conv2d(256, hbody_cls, kernel_size=1, padding=0, stride=1, bias=True)
 
         self.alpha_hb = nn.Parameter(torch.ones(1))
-        self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
-                                 nn.Conv2d(256, 256, 1, bias=False), InPlaceABNSync(256))
-        self.se = nn.Sequential(
-                            nn.Conv2d(256, 256, 1, bias=True),
-                            nn.Sigmoid())
+        # self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
+        #                          nn.Conv2d(256, 256, 1, bias=False), InPlaceABNSync(256))
+        # self.se = nn.Sequential(
+        #                     nn.Conv2d(256, 256, 1, bias=True),
+        #                     nn.Sigmoid())
 
     def forward(self, x, skip):
         _, _, h, w = skip.size()
@@ -75,9 +76,9 @@ class AlphaHBDecoder(nn.Module):
         xup = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
         xfuse = xup + self.alpha_hb * skip
         output = self.conv1(xfuse)
-        gp = self.gap(output)
-        se = self.se(gp)
-        output = torch.cat([output+se*output, gp.expand_as(output)], dim=1)
+        # gp = self.gap(output)
+        # se = self.se(gp)
+        # output = torch.cat([output+se*output, gp.expand_as(output)], dim=1)
         output = self.cls_hb(output)
         return output
 
@@ -88,17 +89,18 @@ class AlphaFBDecoder(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False), 
+                                   BatchNorm2d(256), nn.ReLU(inplace=False),
+                                   SEModule(256, reduction=16) 
                                    )
                                 #    SEModule(256, reduction=16)
-        self.cls_fb = nn.Conv2d(512, fbody_cls, kernel_size=1, padding=0, stride=1, bias=True)
+        self.cls_fb = nn.Conv2d(256, fbody_cls, kernel_size=1, padding=0, stride=1, bias=True)
 
         self.alpha_fb = nn.Parameter(torch.ones(1))
-        self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
-                                 nn.Conv2d(256, 256, 1, bias=False), InPlaceABNSync(256))
-        self.se = nn.Sequential(
-                            nn.Conv2d(256, 256, 1, bias=True),
-                            nn.Sigmoid())
+        # self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
+        #                          nn.Conv2d(256, 256, 1, bias=False), InPlaceABNSync(256))
+        # self.se = nn.Sequential(
+        #                     nn.Conv2d(256, 256, 1, bias=True),
+        #                     nn.Sigmoid())
 
     def forward(self, x, skip):
         _, _, h, w = skip.size()
@@ -106,9 +108,9 @@ class AlphaFBDecoder(nn.Module):
         xup = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
         xfuse = xup + self.alpha_fb * skip
         output = self.conv1(xfuse)
-        gp = self.gap(output)
-        se = self.se(gp)
-        output = torch.cat([output+se*output, gp.expand_as(output)], dim=1)
+        # gp = self.gap(output)
+        # se = self.se(gp)
+        # output = torch.cat([output+se*output, gp.expand_as(output)], dim=1)
         output = self.cls_fb(output)
         return output
 
