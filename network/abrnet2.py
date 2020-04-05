@@ -94,10 +94,10 @@ class Decoder(nn.Module):
         self.layer6 = DecoderModule(num_classes)
         self.layerh = AlphaHBDecoder(hbody_cls)
         self.layerf = AlphaFBDecoder(fbody_cls)
-
-        self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-                                       BatchNorm2d(512), nn.ReLU(inplace=False),
-                                       nn.Conv2d(512, num_classes, kernel_size=1, stride=1, padding=0, bias=True))
+        
+        self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1),
+                                       BatchNorm2d(256), nn.ReLU(inplace=False),
+                                       nn.Conv2d(256, num_classes, kernel_size=1, stride=1, padding=0, bias=True))
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
         seg = self.layer5(x[-1])
