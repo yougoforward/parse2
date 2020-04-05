@@ -57,8 +57,9 @@ class AlphaHBDecoder(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16)
+                                   BatchNorm2d(256), nn.ReLU(inplace=False), 
                                    )
+                                   
         self.cls_hb = nn.Conv2d(512, hbody_cls, kernel_size=1, padding=0, stride=1, bias=True)
 
         self.alpha_hb = nn.Parameter(torch.ones(1))
@@ -87,13 +88,14 @@ class AlphaFBDecoder(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16)
+                                   BatchNorm2d(256), nn.ReLU(inplace=False), 
                                    )
+                                #    SEModule(256, reduction=16)
         self.cls_fb = nn.Conv2d(512, fbody_cls, kernel_size=1, padding=0, stride=1, bias=True)
 
         self.alpha_fb = nn.Parameter(torch.ones(1))
         self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
-                                 nn.Conv2d(256, 256, 1, bias=False), InPlaceABNSync(512))
+                                 nn.Conv2d(256, 256, 1, bias=False), InPlaceABNSync(256))
         self.se = nn.Sequential(
                             nn.Conv2d(256, 256, 1, bias=True),
                             nn.Sigmoid())
