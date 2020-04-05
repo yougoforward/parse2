@@ -27,7 +27,7 @@ class DecoderModule(nn.Module):
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
         # self.conv4 = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
-        self.conv4 = nn.Conv2d(256+512, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
+        self.conv4 = nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
         self.alpha = nn.Parameter(torch.ones(1))
         # self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
         #                          nn.Conv2d(256, 256, 1, bias=False), InPlaceABNSync(256))
@@ -47,9 +47,9 @@ class DecoderModule(nn.Module):
         # gp = self.gap(x_fea)
         # se = self.se(gp)
         # out = torch.cat([x_fea+se*x_fea, gp.expand_as(x_fea)], dim=1)
-        n, c, _, _ = gp.size()
-        output = torch.cat([x_fea, gp.expand(n, c, th, tw)], dim=1)
-        x_seg = self.conv4(output)
+        # n, c, _, _ = gp.size()
+        # output = torch.cat([x_fea, gp.expand(n, c, th, tw)], dim=1)
+        x_seg = self.conv4(x_fea)
         return x_seg, xt_fea
 
 
