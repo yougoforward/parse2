@@ -137,13 +137,13 @@ class Decoder(nn.Module):
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
         seg, gp = self.layer5(x[-1])
-        segh, gph = self.layer5h(x[-1])
-        segf, gpf = self.layer5f(x[-1])
+        # segh, gph = self.layer5h(x[-1])
+        # segf, gpf = self.layer5f(x[-1])
 
 
         x_seg, xt_fea = self.layer6(seg, gp, x[1], x[0])
-        alpha_hb = self.layerh(segh, gph, x[1])
-        alpha_fb = self.layerf(segf, gpf, x[1])
+        alpha_hb = self.layerh(seg, gp, x[1])
+        alpha_fb = self.layerf(seg, gp, x[1])
 
         return [x_seg, alpha_hb, alpha_fb, x_dsn]
 
