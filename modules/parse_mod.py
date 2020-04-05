@@ -117,7 +117,7 @@ class ASPPModule(nn.Module):
         # output = torch.cat([self.pam0(out+se*out), gp.expand(n, c, h, w)], dim=1)
         # output = self.head_conv(output)
 
-        return output
+        return output, gp
 
 
 class ASPAtteModule(nn.Module):
