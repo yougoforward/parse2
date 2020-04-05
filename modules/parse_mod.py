@@ -113,8 +113,9 @@ class ASPPModule(nn.Module):
         #gp
         gp = self.gap(x)
         se = self.se(gp)
-        output = torch.cat([self.pam0(out+se*out), gp.expand(n, c, h, w)], dim=1)
-        output = self.head_conv(output)
+        output = self.pam0(out+se*out)
+        # output = torch.cat([self.pam0(out+se*out), gp.expand(n, c, h, w)], dim=1)
+        # output = self.head_conv(output)
 
         return output
 
