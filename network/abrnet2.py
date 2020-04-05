@@ -49,7 +49,7 @@ class DecoderModule(nn.Module):
         # out = torch.cat([x_fea+se*x_fea, gp.expand_as(x_fea)], dim=1)
         # n, c, _, _ = gp.size()
         # output = torch.cat([x_fea, gp.expand(n, c, th, tw)], dim=1)
-        x_seg = self.conv4(output)
+        x_seg = self.conv4(x_fea)
         return x_seg, xt_fea
 
 
