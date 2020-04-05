@@ -26,7 +26,7 @@ class DecoderModule(nn.Module):
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
-        self.conv4 = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256+512, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
+        self.conv4 = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
 
         self.alpha = nn.Parameter(torch.ones(1))
         # self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
@@ -47,8 +47,8 @@ class DecoderModule(nn.Module):
         # gp = self.gap(x_fea)
         # se = self.se(gp)
         # out = torch.cat([x_fea+se*x_fea, gp.expand_as(x_fea)], dim=1)
-        n, c, _, _ = gp.size()
-        output = torch.cat([x_fea, gp.expand(n, c, th, tw)], dim=1)
+        # n, c, _, _ = gp.size()
+        # output = torch.cat([x_fea, gp.expand(n, c, th, tw)], dim=1)
         x_seg = self.conv4(output)
         return x_seg, xt_fea
 
@@ -63,7 +63,7 @@ class AlphaHBDecoder(nn.Module):
                                    SEModule(256, reduction=16) 
                                    )
                                    
-        self.cls_hb = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256+512, hbody_cls, kernel_size=1, padding=0, stride=1, bias=True))
+        self.cls_hb = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, hbody_cls, kernel_size=1, padding=0, stride=1, bias=True))
 
         self.alpha_hb = nn.Parameter(torch.ones(1))
         # self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
@@ -81,8 +81,8 @@ class AlphaHBDecoder(nn.Module):
         # gp = self.gap(output)
         # se = self.se(gp)
         # output = torch.cat([output+se*output, gp.expand_as(output)], dim=1)
-        n, c, _, _ = gp.size()
-        output = torch.cat([output, gp.expand(n, c, h, w)], dim=1)
+        # n, c, _, _ = gp.size()
+        # output = torch.cat([output, gp.expand(n, c, h, w)], dim=1)
         output = self.cls_hb(output)
         return output
 
@@ -97,7 +97,7 @@ class AlphaFBDecoder(nn.Module):
                                    SEModule(256, reduction=16) 
                                    )
                                 #    SEModule(256, reduction=16)
-        self.cls_fb = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256+512, fbody_cls, kernel_size=1, padding=0, stride=1, bias=True))
+        self.cls_fb = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, fbody_cls, kernel_size=1, padding=0, stride=1, bias=True))
 
         self.alpha_fb = nn.Parameter(torch.ones(1))
         # self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
@@ -115,8 +115,8 @@ class AlphaFBDecoder(nn.Module):
         # gp = self.gap(output)
         # se = self.se(gp)
         # output = torch.cat([output+se*output, gp.expand_as(output)], dim=1)
-        n, c, _, _ = gp.size()
-        output = torch.cat([output, gp.expand(n, c, h, w)], dim=1)
+        # n, c, _, _ = gp.size()
+        # output = torch.cat([output, gp.expand(n, c, h, w)], dim=1)
         output = self.cls_fb(output)
         return output
 
