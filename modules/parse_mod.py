@@ -35,8 +35,8 @@ class PAM_Module(nn.Module):
                 out : attention value + input feature
                 attention: B X (HxW) X (HxW)
         """
-        # xp = self.pool(x)
-        xp = x
+        xp = self.pool(x)
+        # xp = x
         m_batchsize, C, height, width = x.size()
         m_batchsize, C, hp, wp = xp.size()
         proj_query = self.query_conv(x).view(m_batchsize, -1, width*height).permute(0, 2, 1)
@@ -87,7 +87,7 @@ class ASPPModule(nn.Module):
 
         self.project = nn.Sequential(nn.Conv2d(out_dim * 4, out_dim, kernel_size=1, padding=0, bias=False),
                                        InPlaceABNSync(out_dim))
-        self.head_conv = nn.Sequential(nn.Conv2d(out_dim, out_dim, kernel_size=1, padding=0, bias=False),
+        self.head_conv = nn.Sequential(nn.Conv2d(out_dim*2, out_dim, kernel_size=1, padding=0, bias=False),
                                        InPlaceABNSync(out_dim))
         self.pam0 = PAM_Module(in_dim=out_dim, key_dim=out_dim//8,value_dim=out_dim,out_dim=out_dim)
         self.se = nn.Sequential(
@@ -113,9 +113,9 @@ class ASPPModule(nn.Module):
         #gp
         gp = self.gap(x)
         se = self.se(gp)
-        output = self.pam0(out+se*out)
-        # output = torch.cat([self.pam0(out+se*out), gp.expand(n, c, h, w)], dim=1)
-        # output = self.head_conv(output)
+        # output = self.pam0(out+se*out)
+        output = torch.cat([self.pam0(out+se*out), gp.expand(n, c, h, w)], dim=1)
+        output = self.head_conv(output)
 
         return output, gp
 
