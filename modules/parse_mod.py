@@ -103,12 +103,12 @@ class ASPPModule(nn.Module):
 
         # psaa
         y1 = torch.cat((feat0, feat1, feat2, feat3), 1)
-        psaa_feat = self.psaa_conv(torch.cat([x, y1], dim=1))
-        psaa_att = torch.sigmoid(psaa_feat)
-        psaa_att_list = torch.split(psaa_att, 1, dim=1)
+        # psaa_feat = self.psaa_conv(torch.cat([x, y1], dim=1))
+        # psaa_att = torch.sigmoid(psaa_feat)
+        # psaa_att_list = torch.split(psaa_att, 1, dim=1)
 
-        y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2, psaa_att_list[3] * feat3), 1)
-        out = self.project(y2)
+        # y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2, psaa_att_list[3] * feat3), 1)
+        out = self.project(y1)
 
         #gp
         gp = self.gap(x)
