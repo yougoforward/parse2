@@ -1663,7 +1663,7 @@ class ABRLovaszLoss2(nn.Module):
         self.only_present = only_present
         self.weight = torch.FloatTensor([0.82877791, 0.95688253, 0.94921949, 1.00538108, 1.0201687,  1.01665831, 1.05470914])
 
-        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
+        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=None)
         self.criterion2 = torch.nn.CrossEntropyLoss(ignore_index=ignore_index)
 
     def forward(self, preds, targets):
@@ -1691,7 +1691,7 @@ class ABRLovaszLoss2(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return  loss_ce+0.4*loss_hb_ce+0.4*loss_fb_ce+loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.2 * loss_dsn
+        return  loss_ce+0.4*loss_hb_ce+0.4*loss_fb_ce+loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
 
 class du_ABRLovaszLoss(nn.Module):
     """Lovasz loss for Alpha process"""
