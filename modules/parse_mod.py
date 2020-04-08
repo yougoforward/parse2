@@ -50,8 +50,8 @@ class PAM_Module(nn.Module):
         out = out.view(m_batchsize, C, height, width)
         # out = F.interpolate(out, (height, width), mode="bilinear", align_corners=True)
 
-        gamma = self.gamma(x)
-        out = (1-gamma)*out + gamma*x
+        # gamma = self.gamma(x)
+        # out = (1-gamma)*out + gamma*x
         # out = self.fuse_conv(out)
         return out
 class ASPPModule(nn.Module):
@@ -87,7 +87,7 @@ class ASPPModule(nn.Module):
 
         self.project = nn.Sequential(nn.Conv2d(out_dim * 4, out_dim, kernel_size=1, padding=0, bias=False),
                                        InPlaceABNSync(out_dim))
-        self.head_conv = nn.Sequential(nn.Conv2d(out_dim*2, out_dim, kernel_size=1, padding=0, bias=False),
+        self.head_conv = nn.Sequential(nn.Conv2d(out_dim*3, out_dim, kernel_size=1, padding=0, bias=False),
                                        InPlaceABNSync(out_dim))
         self.pam0 = PAM_Module(in_dim=out_dim, key_dim=out_dim//8,value_dim=out_dim,out_dim=out_dim)
         self.se = nn.Sequential(
@@ -112,10 +112,12 @@ class ASPPModule(nn.Module):
 
         #gp
         gp = self.gap(x)
-        # se = self.se(gp)
+        se = self.se(gp)
         # output = self.pam0(out+se*out)
         # output = torch.cat([self.pam0(out+se*out), gp.expand(n, c, h, w)], dim=1)
-        output = torch.cat([self.pam0(out), gp.expand(n, c, h, w)], dim=1)
+        out = out+se*out
+
+        output = torch.cat([out, self.pam0(out), gp.expand(n, c, h, w)], dim=1)
         output = self.head_conv(output)
 
         # feat4 = F.interpolate(gp, (h, w), mode="bilinear", align_corners=True)
