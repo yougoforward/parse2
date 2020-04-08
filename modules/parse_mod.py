@@ -35,8 +35,8 @@ class PAM_Module(nn.Module):
                 out : attention value + input feature
                 attention: B X (HxW) X (HxW)
         """
-        xp = self.pool(x)
-        # xp = x
+        # xp = self.pool(x)
+        xp = x
         m_batchsize, C, height, width = x.size()
         m_batchsize, C, hp, wp = xp.size()
         proj_query = self.query_conv(x).view(m_batchsize, -1, width*height).permute(0, 2, 1)
@@ -103,18 +103,19 @@ class ASPPModule(nn.Module):
 
         # psaa
         y1 = torch.cat((feat0, feat1, feat2, feat3), 1)
-        # psaa_feat = self.psaa_conv(torch.cat([x, y1], dim=1))
-        # psaa_att = torch.sigmoid(psaa_feat)
-        # psaa_att_list = torch.split(psaa_att, 1, dim=1)
+        psaa_feat = self.psaa_conv(torch.cat([x, y1], dim=1))
+        psaa_att = torch.sigmoid(psaa_feat)
+        psaa_att_list = torch.split(psaa_att, 1, dim=1)
 
-        # y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2, psaa_att_list[3] * feat3), 1)
-        out = self.project(y1)
+        y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2, psaa_att_list[3] * feat3), 1)
+        out = self.project(y2)
 
         #gp
         gp = self.gap(x)
-        se = self.se(gp)
+        # se = self.se(gp)
         # output = self.pam0(out+se*out)
-        output = torch.cat([self.pam0(out+se*out), gp.expand(n, c, h, w)], dim=1)
+        # output = torch.cat([self.pam0(out+se*out), gp.expand(n, c, h, w)], dim=1)
+        output = torch.cat([self.pam0(out), gp.expand(n, c, h, w)], dim=1)
         output = self.head_conv(output)
 
         # feat4 = F.interpolate(gp, (h, w), mode="bilinear", align_corners=True)
