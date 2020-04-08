@@ -229,4 +229,82 @@ class SE_Module(nn.Module):
         out = self.se(x)
         return out
 
+class SelfAttentionModule(nn.Module):
+    """The basic implementation for self-attention block/non-local block
+    Parameters:
+        in_dim       : the dimension of the input feature map
+        key_dim      : the dimension after the key/query transform
+        value_dim    : the dimension after the value transform
+        scale        : choose the scale to downsample the input feature maps (save memory cost)
+    """
 
+    def __init__(self, in_dim, out_dim, key_dim, value_dim, scale=2):
+        super(SelfAttentionModule, self).__init__()
+        self.scale = scale
+        self.in_dim = in_dim
+        self.out_dim = out_dim
+        self.key_dim = key_dim
+        self.value_dim = value_dim
+        self.pool = nn.MaxPool2d(kernel_size=(scale, scale))
+        self.func_key = nn.Sequential(nn.Conv2d(in_channels=self.in_dim, out_channels=self.key_dim,
+                                                kernel_size=1, stride=1, padding=0, bias=False),
+                                      InPlaceABNSync(self.key_dim))
+        self.func_query = self.func_key
+        self.func_value = nn.Conv2d(in_channels=self.in_dim, out_channels=self.value_dim,
+                                    kernel_size=1, stride=1, padding=0)
+        self.weights = nn.Conv2d(in_channels=self.value_dim, out_channels=self.out_dim,
+                                 kernel_size=1, stride=1, padding=0)
+        nn.init.constant_(self.weights.weight, 0)
+        nn.init.constant_(self.weights.bias, 0)
+
+        self.refine = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, bias=False),
+                                    InPlaceABNSync(out_dim))
+
+    def forward(self, x):
+        batch, h, w = x.size(0), x.size(2), x.size(3)
+        if self.scale > 1:
+            x = self.pool(x)
+
+        value = self.func_value(x).view(batch, self.value_dim, -1)  # bottom
+        value = value.permute(0, 2, 1)
+        query = self.func_query(x).view(batch, self.key_dim, -1)  # top
+        query = query.permute(0, 2, 1)
+        key = self.func_key(x).view(batch, self.key_dim, -1)  # mid
+
+        sim_map = torch.matmul(query, key)
+        sim_map = (self.key_dim ** -.5) * sim_map
+        sim_map = F.softmax(sim_map, dim=-1)
+
+        context = torch.matmul(sim_map, value)
+        context = context.permute(0, 2, 1).contiguous()
+        context = context.view(batch, self.value_dim, *x.size()[2:])
+        context = self.weights(context)
+        if self.scale > 1:
+            context = F.interpolate(input=context, size=(h, w), mode='bilinear', align_corners=True)
+        output = self.refine(context)
+        return output
+
+
+class ChannelAttentionModule(nn.Module):
+    """ Channel attention module"""
+
+    def __init__(self, in_dim):
+        super(ChannelAttentionModule, self).__init__()
+        self.chanel_in = in_dim
+        self.gamma = nn.Parameter(torch.zeros(1))
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, x):
+        m_batchsize, chn, height, width = x.size()
+        proj_query = x.view(m_batchsize, chn, -1)
+        proj_key = x.view(m_batchsize, chn, -1).permute(0, 2, 1)
+        energy = torch.matmul(proj_query, proj_key)
+        energy_new = torch.max(energy, -1, keepdim=True)[0].expand_as(energy) - energy
+        attention = self.softmax(energy_new)
+        proj_value = x.view(m_batchsize, chn, -1)
+
+        out = torch.matmul(attention, proj_value)
+        out = out.view(m_batchsize, chn, height, width)
+
+        out = self.gamma * out + x
+        return out
