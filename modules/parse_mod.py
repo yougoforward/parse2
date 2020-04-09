@@ -124,7 +124,7 @@ class ASPPModule(nn.Module):
         # y1 = torch.cat((feat0, feat1, feat2, feat3, feat4), 1)
         # out = self.project(y1)
         output = self.pam0(out)
-        return output, gp
+        return output
 
 
 class ASPAtteModule(nn.Module):
