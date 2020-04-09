@@ -50,8 +50,8 @@ class PAM_Module(nn.Module):
         out = out.view(m_batchsize, C, height, width)
         # out = F.interpolate(out, (height, width), mode="bilinear", align_corners=True)
 
-        # gamma = self.gamma(x)
-        # out = (1-gamma)*out + gamma*x
+        gamma = self.gamma(x)
+        out = (1-gamma)*out + gamma*x
         # out = self.fuse_conv(out)
         return out
 class ASPPModule(nn.Module):
@@ -112,12 +112,12 @@ class ASPPModule(nn.Module):
 
         #gp
         gp = self.gap(x)
-        se = self.se(gp)
+        # se = self.se(gp)
         # output = self.pam0(out+se*out)
         # output = torch.cat([self.pam0(out+se*out), gp.expand(n, c, h, w)], dim=1)
-        out = out+se*out
+        # out = out+se*out
 
-        output = torch.cat([out, self.pam0(out), gp.expand(n, c, h, w)], dim=1)
+        output = torch.cat([self.pam0(out), gp.expand(n, c, h, w)], dim=1)
         output = self.head_conv(output)
 
         # feat4 = F.interpolate(gp, (h, w), mode="bilinear", align_corners=True)
