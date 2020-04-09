@@ -11,7 +11,6 @@ from dataset import cv2_aug_transforms as cv2_aug_trans
 # from dataset import transforms as trans
 import json
 import logging
-from .label_relax_transforms import RelaxedBoundaryLossToTensor
 
 class Configer(object):
     def __init__(self, hypes_file=None):
@@ -95,13 +94,12 @@ class DataGenerator(data.Dataset):
 
         imgs, segs = make_dataset(root, list_path)
 
-        self.label_relax = RelaxedBoundaryLossToTensor(ignore_id=255, num_classes=7)
-
         self.root = root
         self.imgs = imgs
         self.segs = segs
         self.crop_size = crop_size
         self.training = training
+
         self.configer = Configer(hypes_file='./dataset/data_augmentation_trans_config.json')
 
         if self.configer.get('data', 'image_tool') == 'pil':
@@ -112,16 +110,6 @@ class DataGenerator(data.Dataset):
             logging.error('Not support {} image tool.'.format(self.configer.get('data', 'image_tool')))
             exit(1)
 
-        # self.img_transform = trans.Compose([
-        #     trans.ToTensor(),
-        #     trans.Normalize(div_value=self.configer.get('normalize', 'div_value'),
-        #                     mean=self.configer.get('normalize', 'mean'),
-        #                     std=self.configer.get('normalize', 'std')), ])
-
-        # self.label_transform = trans.Compose([
-        #     trans.ToLabel(),
-        #     trans.ReLabel(255, -1), ])
-
     def __getitem__(self, index):
         mean = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
         # load data
@@ -130,26 +118,8 @@ class DataGenerator(data.Dataset):
         seg = cv2.imread(self.segs[index], cv2.IMREAD_GRAYSCALE)
 
         if self.training:
-            #random blur
-            # gaussian blur as in PSP
-            # if random.random() < 0.5:
-            #     sigma = random.random()*10
-            #     img = cv2.GaussianBlur(img, (int(sigma)*2+1,int(sigma)*2+1), int(sigma)+1)
-            # gaussian blur as in PSP
-            pil_img = Image.fromarray(img)
-            if random.random() < 0.5:
-                pil_img = pil_img.filter(ImageFilter.GaussianBlur(
-                    radius=random.random()))
-            img = np.asarray(pil_img)
-
             if self.aug_train_transform is not None:
                 img, seg = self.aug_train_transform(img, labelmap=seg)
-
-            # if self.img_transform is not None:
-            #     img = self.img_transform(img)
-            #
-            # if self.label_transform is not None:
-            #     seg = self.label_transform(seg)
 
             # random scale
             ratio = random.uniform(0.5, 2.0)
