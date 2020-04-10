@@ -111,19 +111,20 @@ class ASPPModule(nn.Module):
         out = self.project(y2)
 
         #gp
-        # gp = self.gap(x)
-        # se = self.se(gp)
+        gp = self.gap(x)
+        se = self.se(gp)
         # output = self.pam0(out+se*out)
         # output = torch.cat([self.pam0(out+se*out), gp.expand(n, c, h, w)], dim=1)
+        output = torch.cat([out+se*out, gp.expand(n, c, h, w)], dim=1)
         # out = out+se*out
 
         # output = torch.cat([self.pam0(out), gp.expand(n, c, h, w)], dim=1)
-        # output = self.head_conv(output)
+        output = self.head_conv(output)
 
         # feat4 = F.interpolate(gp, (h, w), mode="bilinear", align_corners=True)
         # y1 = torch.cat((feat0, feat1, feat2, feat3, feat4), 1)
         # out = self.project(y1)
-        output = self.pam0(out)
+        # output = self.pam0(out)
         return output
 
 
