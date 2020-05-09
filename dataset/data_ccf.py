@@ -5,6 +5,7 @@ import random
 import cv2
 import numpy as np
 import torch.utils.data as data
+import torchvision.transforms as transforms
 
 
 # ###### Data loading #######
@@ -49,6 +50,9 @@ class DataGenerator(data.Dataset):
         self.segs = segs
         self.crop_size = crop_size
         self.training = training
+        self.img_transform = trans.Compose([
+            transforms.ToPILImage(mode=None),
+            transforms.ColorJitter(brightness=0.1, contrast=0.5, saturation=0.5, hue=0.1)])
 
     def __getitem__(self, index):
         mean = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
@@ -58,6 +62,10 @@ class DataGenerator(data.Dataset):
         seg = cv2.imread(self.segs[index], cv2.IMREAD_GRAYSCALE)
 
         if self.training:
+            #colorjitter
+            if self.img_transform is not None:
+                img = self.img_transform(img)
+                img = np.array(img).astype(np.uint8)
             # random scale
             ratio = random.uniform(0.5, 2.0)
             img = cv2.resize(img, None, fx=ratio, fy=ratio, interpolation=cv2.INTER_LINEAR)

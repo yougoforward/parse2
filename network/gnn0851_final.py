@@ -14,38 +14,39 @@ from modules.convGRU import ConvGRU
 from modules.dcn import DFConv2d
 
 class Composition(nn.Module):
-    def __init__(self, hidden_dim):
+    def __init__(self, hidden_dim, parts_num):
         super(Composition, self).__init__()
-        self.conv_ch = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+        self.relation = nn.Sequential(
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
-    def forward(self, xh, xp_list, xp_att_list):
-        # xp = torch.max(torch.stack(xp_list, dim=1), dim=1, keepdim=False)[0]
-        com_att = sum(xp_att_list)
-        xph_message = sum([self.conv_ch(torch.cat([xh, xp * com_att.detach()], dim=1)) for xp in xp_list])
-        # xph_message = self.conv_ch(torch.cat([xh, xp * com_att], dim=1))
-        return xph_message
+        self.comp_att = nn.Sequential(
+            nn.Conv2d(parts_num * hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
+            nn.Sigmoid()
+        )
+    def forward(self, xf, xp_list):
+        comp_att = self.comp_att(torch.cat(xp_list, dim=1))
+        comp_message = sum([self.relation(torch.cat([xf, xp * comp_att], dim=1)) for xp in xp_list])
+        return comp_message
 
 
 class Decomposition(nn.Module):
-    def __init__(self, hidden_dim=10, parts=2):
+    def __init__(self, hidden_dim=10, parts_num=2):
         super(Decomposition, self).__init__()
         self.conv_fh = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2 * hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(2 * hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
-        self.decomp_att = Decomp_att(hidden_dim=hidden_dim, parts=parts)
+        self.decomp_att = nn.Sequential(
+            nn.Conv2d(hidden_dim, parts_num, kernel_size=1, padding=0, stride=1, bias=True),
+            nn.Sigmoid()
+        )
 
-    def forward(self, xf, xh_list):
-        decomp_att_list, maps = self.decomp_att(xf, xh_list)
-        decomp_fh_list = [self.conv_fh(torch.cat([xf * decomp_att_list[i+1], xh_list[i]], dim=1)) for i in
+    def forward(self, xf, xp_list):
+        decomp_att_list, maps = selfn
                           range(len(xh_list))]
-        return decomp_fh_list, decomp_att_list, maps
+        return decomp_fh_list, deco.decomp_att(xf, xh_list)
+        decomp_fh_list = [self.conv_fh(torch.cat([xf * decomp_att_list[i+1], xh_list[i]], dim=1)) for i imp_att_list, maps
 
 
 # class Decomp_att(nn.Module):

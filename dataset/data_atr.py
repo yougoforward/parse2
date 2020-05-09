@@ -5,6 +5,7 @@ import random
 import cv2
 import numpy as np
 import torch.utils.data as data
+import torchvision.transforms as transforms
 
 
 # ###### Data loading #######
@@ -53,6 +54,9 @@ class DatasetGenerator(data.Dataset):
         self.segs_rev = segs_rev
         self.crop_size = crop_size
         self.training = training
+        self.img_transform = trans.Compose([
+            transforms.ToPILImage(mode=None),
+            transforms.ColorJitter(brightness=0.1, contrast=0.5, saturation=0.5, hue=0.1)])
 
     def __getitem__(self, index):
         # load data
@@ -63,6 +67,10 @@ class DatasetGenerator(data.Dataset):
         seg_rev_in = cv2.imread(self.segs_rev[index], cv2.IMREAD_GRAYSCALE)
 
         if self.training:
+            #colorjitter
+            if self.img_transform is not None:
+                img = self.img_transform(img)
+                img = np.array(img).astype(np.uint8)
             # random mirror
             flip = np.random.choice(2) * 2 - 1
             img = img[:, ::flip, :]
