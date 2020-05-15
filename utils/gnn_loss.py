@@ -19,10 +19,6 @@ class gnn_loss(nn.Module):
         for i in range(self.edge_index_num):
             self.part_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
 
-        self.node_pairs = []
-        for i in range(self.edge_index_num):
-            if self.edge_index[i, 0]<self.edge_index[i, 1]:
-                self.node_pairs.append([self.edge_index[i, 0], self.edge_index[i, 1]])
         self.ignore_index = ignore_index
         self.only_present = only_present
         self.weight = torch.FloatTensor([0.82877791, 0.95688253, 0.94921949, 1.00538108, 1.0201687,  1.01665831, 1.05470914])
