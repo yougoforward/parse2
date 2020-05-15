@@ -29,7 +29,7 @@ class gnn_loss(nn.Module):
         self.cls_h = cls_h
         self.cls_f = cls_f
         self.bceloss = torch.nn.BCELoss(reduction='none')
-        self.aaf_loss = AAF_Loss(ignore_index, num_classes)
+        self.aaf_loss = AAF_Loss(ignore_index, cls_p)
 
     def forward(self, preds, targets):
         h, w = targets[0].size(1), targets[0].size(2)
