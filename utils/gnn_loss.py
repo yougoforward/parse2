@@ -85,7 +85,7 @@ class gnn_loss(nn.Module):
         #one hot part
         labels_p = targets[0]
         one_label_p = labels_p.clone().long()
-        one_label_p[one_label_p == 255] = 0
+        one_label_p[one_label_p == self.ignore_index] = 0
         one_hot_lab_p = F.one_hot(one_label_p, num_classes=self.num_classes)
         one_hot_pb_list = list(torch.split(one_hot_lab_p, 1, dim=-1))
         for i in range(0, self.num_classes):
@@ -94,7 +94,7 @@ class gnn_loss(nn.Module):
         #one hot half
         labels_h = targets[1]
         one_label_h = labels_h.clone().long()
-        one_label_h[one_label_h == 255] = 0
+        one_label_h[one_label_h == self.ignore_index] = 0
         one_hot_lab_h = F.one_hot(one_label_h, num_classes=self.cls_h)
         one_hot_hb_list = list(torch.split(one_hot_lab_h, 1, dim=-1))
         for i in range(0, self.cls_h):
@@ -103,14 +103,14 @@ class gnn_loss(nn.Module):
         #one hot full
         labels_f = targets[2]
         one_label_f = labels_f.clone().long()
-        one_label_f[one_label_f == 255] = 0
+        one_label_f[one_label_f == self.ignore_index] = 0
         one_hot_lab_f = F.one_hot(one_label_f, num_classes=self.cls_f)
         one_hot_fb_list = list(torch.split(one_hot_lab_f, 1, dim=-1))
         for i in range(0, self.cls_f):
             one_hot_fb_list[i] = one_hot_fb_list[i].squeeze(-1)
             # one_hot_fb_list[i][targets[2]==255]=255
         # #
-        ignore = (targets[0] != 255).float().unsqueeze(1)
+        ignore = (targets[0] != self.ignore_index).float().unsqueeze(1)
 
         #decomp up
         upper_bg_node = 1-one_hot_hb_list[1]
@@ -119,7 +119,7 @@ class gnn_loss(nn.Module):
             upper_parts.append(one_hot_pb_list[i])
         targets_up = torch.stack([upper_bg_node] + upper_parts, dim=1)
         targets_up = targets_up.argmax(dim=1, keepdim=False)
-        targets_up[targets[0] == 255] = 255
+        targets_up[targets[0] == self.ignore_index] = self.ignore_index
         loss_up_att = []
         for i in range(len(preds[4])):
             pred_up = F.interpolate(input=preds[4][i], size=(h, w), mode='bilinear', align_corners=True)
@@ -134,7 +134,7 @@ class gnn_loss(nn.Module):
             lower_parts.append(one_hot_pb_list[i])
         targets_lp = torch.stack([lower_bg_node]+lower_parts, dim=1)
         targets_lp = targets_lp.argmax(dim=1,keepdim=False)
-        targets_lp[targets[0]==255]=255
+        targets_lp[targets[0]==self.ignore_index]=sself.ignore_index
         loss_lp_att = []
         for i in range(len(preds[5])):
             pred_lp = F.interpolate(input=preds[5][i], size=(h, w), mode='bilinear', align_corners=True)
