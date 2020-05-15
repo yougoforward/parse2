@@ -11,15 +11,13 @@ from tensorboardX import SummaryWriter
 from torch.nn import functional as F
 from torch.nn.parallel.scatter_gather import gather
 from torch.utils import data
-# from dataset.combo_dataloader import DataGenerator
 from dataset.dataloader import DataGenerator
 # from dataset.datasets import DatasetGenerator
 from network.abrnet2 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 from utils.lovasz_loss import ABRLovaszLoss
-# from utils.lovasz_loss import ABRLovaszLoss2 as ABRLovaszLoss
-# from utils.lovasz_loss import ABRLoss as ABRLovaszLoss
+
 
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
@@ -40,7 +38,7 @@ def parse_args():
     parser.add_argument('--fbody-cls', type=int, default=2)
     # Optimization options
     parser.add_argument('--epochs', default=151, type=int)
-    parser.add_argument('--batch-size', default=4, type=int)
+    parser.add_argument('--batch-size', default=8, type=int)
     parser.add_argument('--learning-rate', default=7e-3, type=float)
     parser.add_argument('--lr-mode', type=str, default='poly')
     parser.add_argument('--ignore-label', type=int, default=255)
@@ -218,8 +216,6 @@ def validation(model, val_loader, epoch, writer):
     hist_fb = np.zeros((args.fbody_cls, args.fbody_cls))
 
     # Iterate over data.
-    # bar = Bar('Processing {}'.format('val'), max=len(val_loader))
-    # bar.check_tty = False
     from tqdm import tqdm
     tbar = tqdm(val_loader)
     for idx, batch in enumerate(tbar):
@@ -279,7 +275,6 @@ def validation(model, val_loader, epoch, writer):
             #                                                                         pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb)
             # bar.next()
 
-
     print('\n per class iou part: {}'.format(per_class_iu(hist)*100))
     print('per class iou hb: {}'.format(per_class_iu(hist_hb)*100))
     print('per class iou fb: {}'.format(per_class_iu(hist_fb)*100))
@@ -296,7 +291,6 @@ def validation(model, val_loader, epoch, writer):
     writer.add_scalar('val_mIoU_fb', mIoU_fb, epoch)
     # bar.finish()
     tbar.close()
-
     return pixAcc, mIoU
 
 
