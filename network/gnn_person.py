@@ -86,15 +86,15 @@ class Dep_Context(nn.Module):
         self.hidden_dim = hidden_dim
         self.softmax = nn.Softmax(dim=-1)
 
-        self.query_conv = nn.Sequential(nn.Conv2d(hidden_dim+8, hidden_dim+8, bias=False))
+        self.query_conv = nn.Sequential(nn.Conv2d(hidden_dim+8, hidden_dim+8, 1, bias=False))
 
-        self.key_conv = nn.Sequential(nn.Conv2d(in_dim+8, hidden_dim+8, bias=False))
+        self.key_conv = nn.Sequential(nn.Conv2d(in_dim+8, hidden_dim+8, 1, bias=False))
 
-        self.value_conv = nn.Sequential(nn.Conv2d(in_dim, 128, bias=False),
+        self.value_conv = nn.Sequential(nn.Conv2d(in_dim, 128, 1, bias=False),
                                      BatchNorm2d(128), nn.ReLU(inplace=False))
 
 
-        self.project = nn.Sequential(nn.Conv2d(128, hidden_dim, bias=False),
+        self.project = nn.Sequential(nn.Conv2d(128, hidden_dim, 1, bias=False),
                                      BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
         self.pool = nn.AvgPool2d(3, 2)
 
