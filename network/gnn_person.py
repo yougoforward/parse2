@@ -116,7 +116,7 @@ class Dep_Context(nn.Module):
 
         co_context = torch.bmm(val.view(n, 128, -1), attention.permute(0,2,1)).view(n, 128, hp, wp)
         co_context = self.project(co_context)
-        co_context = F.interpolate(co_context, (h, p), mode='bilinear', align_corners=True)
+        co_context = F.interpolate(co_context, (h, w), mode='bilinear', align_corners=True)
         return co_context
 
 
