@@ -335,8 +335,8 @@ class Part_Graph(nn.Module):
         for part in self.lower_part_list:
             lower_parts.append(p_node_list[part - 1])
 
-        decomp_map_u = self.decomp_att_u(upper_parts)
-        decomp_map_l = self.decomp_att_l(lower_parts)
+        decomp_map_u = self.decomp_att_u(h_node_list[0])
+        decomp_map_l = self.decomp_att_l(h_node_list[1])
         decomp_pu_list = self.decomp_hp(h_node_list[0], upper_parts, decomp_map_u)
         decomp_pl_list = self.decomp_hp(h_node_list[1], lower_parts, decomp_map_l)
 
