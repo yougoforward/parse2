@@ -213,7 +213,7 @@ class BetaHBDecoder(nn.Module):
         _, _, h, w = skip.size()
         x_skip = self.conv0(skip)
         x_up = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
-        xfuse = self.conv1(torch.cat([x_up, x_skip], dim=1)
+        xfuse = self.conv1(torch.cat([x_up, x_skip], dim=1))
         return xfuse
 
 
@@ -231,7 +231,7 @@ class AlphaFBDecoder(nn.Module):
         _, _, h, w = skip.size()
         x_skip = self.conv0(skip)
         x_up = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
-        xfuse = self.conv1(torch.cat([x_up, x_skip], dim=1)
+        xfuse = self.conv1(torch.cat([x_up, x_skip], dim=1))
         return xfuse
 
 
