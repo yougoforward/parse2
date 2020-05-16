@@ -436,7 +436,7 @@ class GNN_infer(nn.Module):
         xp_down = self.down(xp)
         # gnn inference at stride 8
         # feature transform
-        f_node_list = list(torch.split(self.f_conv(xf), self.hidden_dim, dim=1)
+        f_node_list = list(torch.split(self.f_conv(xf), self.hidden_dim, dim=1))
         p_node_list = list(torch.split(self.p_conv(xp_down), self.hidden_dim, dim=1))
         h_node_list = list(torch.split(self.h_conv(xh), self.hidden_dim, dim=1))
 
