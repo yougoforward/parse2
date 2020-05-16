@@ -242,7 +242,6 @@ class Full_Graph(nn.Module):
         self.comp_h = Composition(hidden_dim)
         self.comp_att = Comp_att(hidden_dim, cls_h-1)
         self.conv_Update = conv_Update(in_dim, hidden_dim)
-        self.comp_att = nn.Sequential
 
     def forward(self, f_node, h_node_list, p_node_list, xf):
         comp_map_f = self.comp_att(h_node_list)
@@ -383,11 +382,11 @@ class GNN(nn.Module):
 
     def forward(self, p_node_list, h_node_list, f_node, xp, xh, xf):
         # for full body node
-        xf_new, comp_map_f = self.full_infer(f_node, h_node_list, p_node_list, xf)
+        f_node_new, comp_map_f = self.full_infer(f_node, h_node_list, p_node_list, xf)
         # for half body node
-        xh_list_new, decomp_map_f, comp_map_u, comp_map_l = self.half_infer(f_node, h_node_list, p_node_list, xh)
+        h_node_list_new, decomp_map_f, comp_map_u, comp_map_l = self.half_infer(f_node, h_node_list, p_node_list, xh)
         # for part node
-        xp_list_new, decomp_map_u, decomp_map_l, Fdep_att_list = self.part_infer(f_node, h_node_list, p_node_list, xp)
+        p_node_list_new, decomp_map_u, decomp_map_l, Fdep_att_list = self.part_infer(f_node, h_node_list, p_node_list, xp)
 
         return p_node_list_new, h_node_list_new, f_node_new, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list
 
