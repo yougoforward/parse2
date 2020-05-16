@@ -141,7 +141,7 @@ class Contexture(nn.Module):
         F_dep_list =[]
         for i in range(len(xp_list)):
             context = self.F_cont[i](p_fea, xp_list[i])
-            F_dep_list.append(co_context)
+            F_dep_list.append(context)
 
         att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(xp_list))]
         att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(xp_list))]
@@ -246,7 +246,7 @@ class Full_Graph(nn.Module):
     def forward(self, f_node, h_node_list, p_node_list, xf):
         comp_map_f = self.comp_att(h_node_list)
         comp_h = self.comp_h(f_node, h_node_list, comp_map_f)
-        h_node_new = self.conv_Update(xf, f_node, comp_h)
+        f_node_new = self.conv_Update(xf, f_node, comp_h)
         return f_node_new, comp_map_f
 
 
@@ -319,7 +319,7 @@ class Part_Graph(nn.Module):
         self.decomp_att_l = Decomp_att(hidden_dim, self.lower_parts_len)
         self.decomp_hp = Decomposition(hidden_dim)
 
-        self.F_dep_list = Contexture(in_dim=in_dim, hidden_dim=hidden_dim, parts=self.cls_p - 1, part_list_list=self.part_list_list)
+        self.F_dep_list = Contexture(in_dim=in_dim, hidden_dim=hidden_dim, part_list_list=self.part_list_list)
 
         self.part_dp = Dependency(hidden_dim)
 
