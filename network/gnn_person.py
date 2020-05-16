@@ -449,8 +449,8 @@ class GNN_infer(nn.Module):
 
         # node supervision new
         f_seg_new = self.f_seg(torch.cat([f_node_list[0], f_node_new], dim=1))
-        h_seg_new = self.h_seg(torch.cat(h_node_list[0]+h_node_list_new, dim=1))
-        p_seg_new = self.p_seg(torch.cat(p_node_list[0]+p_node_list_new, dim=1))
+        h_seg_new = self.h_seg(torch.cat([h_node_list[0]]+h_node_list_new, dim=1))
+        p_seg_new = self.p_seg(torch.cat([p_node_list[0]]+p_node_list_new, dim=1))
 
         #final readout
         p_seg_final = self.final_cls(p_seg_new, xp)
