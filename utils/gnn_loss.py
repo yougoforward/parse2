@@ -134,7 +134,7 @@ class gnn_loss(nn.Module):
             lower_parts.append(one_hot_pb_list[i])
         targets_lp = torch.stack([lower_bg_node]+lower_parts, dim=1)
         targets_lp = targets_lp.argmax(dim=1,keepdim=False)
-        targets_lp[targets[0]==self.ignore_index]=sself.ignore_index
+        targets_lp[targets[0]==self.ignore_index]=self.ignore_index
         loss_lp_att = []
         for i in range(len(preds[5])):
             pred_lp = F.interpolate(input=preds[5][i], size=(h, w), mode='bilinear', align_corners=True)
