@@ -175,7 +175,7 @@ class conv_Update(nn.Module):
                               return_all_layers=False)
 
     def forward(self, x, h, message):
-        _, out = self.update(message.unsqueeze(1), [torch.cat([x, h], dim=1)])
+        _, out = self.update(torch.cat([x, message], dim=1).unsqueeze(1), [h])
         return out[0][0]
 
 
