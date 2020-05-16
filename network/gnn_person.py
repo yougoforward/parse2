@@ -296,7 +296,7 @@ class Half_Graph(nn.Module):
         xh_l = self.update_l(xh, h_node_list[1], message_l)
 
         xh_list_new = [xh_u, xh_l]
-        return xh_list_new, decomp_att_map, comp_map_u, comp_map_l
+        return xh_list_new, decomp_map, comp_map_u, comp_map_l
 
 
 class Part_Graph(nn.Module):
