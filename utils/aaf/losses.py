@@ -161,7 +161,7 @@ def adaptive_affinity_loss(labels,
   kldiv += neg_probs_paired*torch.log(neg_probs_paired/neg_probs)
   edge_loss = torch.max(torch.tensor(0.0, requires_grad=False).cuda(), kld_margin-kldiv)
   not_edge_loss = kldiv
-  # print(edge_loss.mean())
+  print(edge_loss.mean())
 
   # Impose weights on edge/non-edge losses.
   one_hot_lab = torch.unsqueeze(one_hot_lab, dim=-1)
