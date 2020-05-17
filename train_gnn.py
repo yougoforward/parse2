@@ -12,7 +12,7 @@ from torch.nn import functional as F
 from torch.nn.parallel.scatter_gather import gather
 from torch.utils import data
 
-from dataset.dataloader import DataGenerator
+from dataset.data_pascal import DataGenerator
 # from dataset.datasets import DatasetGenerator
 from network.gnn_person import get_model
 # from network.abrnet import get_model
