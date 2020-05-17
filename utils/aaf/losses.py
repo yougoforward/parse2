@@ -127,10 +127,10 @@ def adaptive_affinity_loss(labels,
   not_edge = ~edge & not_ignore
 
   edge_indices = torch.nonzero(torch.reshape(edge, (-1,)))
-  print(edge_indices.size())
+  # print(edge_indices.size())
   if edge_indices.size()[0]==0:
-        edge_loss=0
-        not_edge_loss=0
+        edge_loss=torch.tensor(0.0, requires_grad=False).cuda()
+        not_edge_loss=torch.tensor(0.0, requires_grad=False).cuda()
         return edge_loss, not_edge_loss
         
   not_edge_indices = torch.nonzero(torch.reshape(not_edge, (-1,)))
