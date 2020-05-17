@@ -51,8 +51,8 @@ class gnn_loss(nn.Module):
         #ce loss
         loss_ce = self.criterion(pred0, targets[0])
 
-        # loss = loss + lovasz_loss + aaf_loss + loss_ce
-        loss = loss + lovasz_loss + loss_ce
+        loss = loss + lovasz_loss + aaf_loss + loss_ce
+        # loss = loss + lovasz_loss + loss_ce
 
         # half body
         loss_hb = []
@@ -272,7 +272,7 @@ class AAF_Loss(nn.Module):
         targets_p_node_list = list(torch.split(one_hot_lab,1, dim=3))
         for i in range(self.num_classes):
             targets_p_node_list[i] = targets_p_node_list[i].squeeze(-1)
-            targets_p_node_list[i][labels==self.ignore_index]=self.ignore_index
+            # targets_p_node_list[i][labels==self.ignore_index]=self.ignore_index
         one_hot_lab = torch.stack(targets_p_node_list, dim=-1)
 
         prob = pred
