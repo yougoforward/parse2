@@ -272,7 +272,7 @@ class AAF_Loss(nn.Module):
         targets_p_node_list = list(torch.split(one_hot_lab,1, dim=3))
         for i in range(self.num_classes):
             targets_p_node_list[i] = targets_p_node_list[i].squeeze(-1)
-            # targets_p_node_list[i][labels==self.ignore_index]=self.ignore_index
+            targets_p_node_list[i][labels==self.ignore_index]=255
         one_hot_lab = torch.stack(targets_p_node_list, dim=-1)
 
         prob = pred

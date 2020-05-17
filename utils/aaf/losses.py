@@ -125,8 +125,14 @@ def adaptive_affinity_loss(labels,
   # Remove ignored pixels from the edge/non-edge.
   edge = edge & not_ignore
   not_edge = ~edge & not_ignore
-  print(edge.max())
+
   edge_indices = torch.nonzero(torch.reshape(edge, (-1,)))
+  print(edge_indices.size())
+  if edge_indices.size()[0]==0:
+        edge_loss=0
+        not_edge_loss=0
+        return edge_loss, not_edge_loss
+        
   not_edge_indices = torch.nonzero(torch.reshape(not_edge, (-1,)))
 
   # Extract eight corner from the center in a patch as paired pixels.
