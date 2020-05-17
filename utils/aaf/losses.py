@@ -166,7 +166,10 @@ def adaptive_affinity_loss(labels,
   one_hot_lab = torch.unsqueeze(one_hot_lab, dim=-1)
   w_edge = torch.sum(w_edge*one_hot_lab.float(), dim=3, keepdim=True) # NxHxWx1x1
   w_not_edge = torch.sum(w_not_edge*one_hot_lab.float(), dim=3, keepdim=True) # NxHxWx1x1
-
+  print(w_edge.max())
+  print(w_not_edge.max())
+  print(edge_loss.mean())
+  print(not_edge_loss.mean())
   edge_loss *= w_edge.permute(0,3,1,2,4)
   not_edge_loss *= w_not_edge.permute(0,3,1,2,4)
 
@@ -174,6 +177,5 @@ def adaptive_affinity_loss(labels,
   not_edge_loss = torch.gather(not_edge_loss, 0, not_edge_indices)
   edge_loss = torch.reshape(edge_loss, (-1,1))
   edge_loss = torch.gather(edge_loss, 0, edge_indices)
-  print(edge_loss.mean())
-  print(not_edge_loss.mean())
+
   return edge_loss, not_edge_loss
