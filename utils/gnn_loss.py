@@ -51,8 +51,8 @@ class gnn_loss(nn.Module):
         #ce loss
         loss_ce = self.criterion(pred0, targets[0])
 
-        loss = loss + lovasz_loss + aaf_loss + loss_ce
-
+        # loss = loss + lovasz_loss + aaf_loss + loss_ce
+        loss = loss + lovasz_loss
 
         # half body
         loss_hb = []
