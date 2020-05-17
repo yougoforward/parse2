@@ -175,7 +175,7 @@ class gnn_loss(nn.Module):
                 parts_bg_node = 1-sum(parts_onehot)
                 targets_dp_onehot = torch.stack([parts_bg_node] + parts_onehot, dim=1)
                 targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
-                targets_dp[targets[0] == 255] = 255
+                targets_dp[targets[0] == self.ignore_index] = self.ignore_index
                 pred_dp = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
                 pred_dp = F.softmax(input=pred_dp, dim=1)
                 loss_dp.append(lovasz_softmax_flat(*flatten_probas(pred_dp, targets_dp, self.ignore_index),
