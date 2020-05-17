@@ -169,8 +169,6 @@ def adaptive_affinity_loss(labels,
 
   edge_loss *= w_edge.permute(0,3,1,2,4)
   not_edge_loss *= w_not_edge.permute(0,3,1,2,4)
-  print(edge_loss.mean())
-  print(not_edge_loss.mean())
 
   not_edge_loss = torch.reshape(not_edge_loss, (-1,1))
   not_edge_loss = torch.gather(not_edge_loss, 0, not_edge_indices)
