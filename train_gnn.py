@@ -48,7 +48,7 @@ def parse_args():
     parser.add_argument('--snapshot_dir', type=str, default='./checkpoints/exp/')
     parser.add_argument('--log-dir', type=str, default='./runs/')
     parser.add_argument('--init', action="store_true")
-    parser.add_argument('--save-num', type=int, default=4)
+    parser.add_argument('--save-num', type=int, default=2)
     # Misc
     parser.add_argument('--seed', type=int, default=123)
     args = parser.parse_args()
