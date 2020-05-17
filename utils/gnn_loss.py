@@ -51,8 +51,8 @@ class gnn_loss(nn.Module):
         #ce loss
         loss_ce = self.criterion(pred0, targets[0])
 
-        loss = loss + lovasz_loss + aaf_loss + loss_ce
-        # loss = loss + lovasz_loss + loss_ce
+        # loss = loss + lovasz_loss + aaf_loss + loss_ce
+        loss = loss + lovasz_loss + loss_ce
 
         # half body
         loss_hb = []
@@ -187,9 +187,9 @@ class gnn_loss(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        # return loss + 0.4 * loss_hb + 0.4 * loss_fb + \
-        #        0.4*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att + loss_dp_att) + 0.4 * loss_dsn
-        return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
+        return loss + 0.4 * loss_hb + 0.4 * loss_fb + \
+               0.4*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att + loss_dp_att) + 0.4 * loss_dsn
+        # return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
 
 class LIP_AAF_Loss(nn.Module):
     """
@@ -289,16 +289,16 @@ class AAF_Loss(nn.Module):
                                                          self.kld_margin,
                                                          w_edge[..., 0],
                                                          w_not_edge[..., 0])
-        # # Apply AAF on 5x5 patch.
-        # eloss_2, neloss_2 = lossx.adaptive_affinity_loss(labels,
-        #                                                  one_hot_lab,
-        #                                                  prob,
-        #                                                  2,
-        #                                                  self.num_classes,
-        #                                                  self.kld_margin,
-        #                                                  w_edge[..., 1],
-        #                                                  w_not_edge[..., 1])
-        # # Apply AAF on 7x7 patch.
+        # Apply AAF on 5x5 patch.
+        eloss_2, neloss_2 = lossx.adaptive_affinity_loss(labels,
+                                                         one_hot_lab,
+                                                         prob,
+                                                         2,
+                                                         self.num_classes,
+                                                         self.kld_margin,
+                                                         w_edge[..., 1],
+                                                         w_not_edge[..., 1])
+        # Apply AAF on 7x7 patch.
         # eloss_3, neloss_3 = lossx.adaptive_affinity_loss(labels,
         #                                                  one_hot_lab,
         #                                                  prob,
@@ -309,10 +309,10 @@ class AAF_Loss(nn.Module):
         #                                                  w_not_edge[..., 2])
         dec = self.dec
         aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1*dec
-        # aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1*dec
+        aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1*dec
         # aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1*dec
         aaf_loss += torch.mean(neloss_1) * self.kld_lambda_2*dec
-        # aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2*dec
+        aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2*dec
         # aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2*dec
 
         return aaf_loss
