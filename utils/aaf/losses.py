@@ -176,6 +176,6 @@ def adaptive_affinity_loss(labels,
   not_edge_loss = torch.gather(not_edge_loss, 0, not_edge_indices)
   edge_loss = torch.reshape(edge_loss, (-1,1))
   edge_loss = torch.gather(edge_loss, 0, edge_indices)
-  print(edge_loss.mean())
-  print(not_edge_loss.mean())
+  print(edge_loss.size())
+  print(not_edge_loss.size())
   return edge_loss, not_edge_loss
