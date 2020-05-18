@@ -428,7 +428,7 @@ class GNN_infer(nn.Module):
 
     def forward(self, xp, xh, xf):
         # _, _, th, tw = xp.size()
-        _, _, h, w = xh.size()
+        # _, _, h, w = xh.size()
         #
         # xh = F.interpolate(xh, (th, tw), mode='bilinear', align_corners=True)
         # xf = F.interpolate(xf, (th, tw), mode='bilinear', align_corners=True)

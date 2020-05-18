@@ -444,7 +444,6 @@ class GNN_infer(nn.Module):
         h_seg = self.h_seg(torch.cat(h_node_list, dim=1))
         p_seg = self.p_seg(torch.cat(p_node_list, dim=1))
 
-
         # output
         p_seg = [p_seg]
         h_seg = [h_seg]
