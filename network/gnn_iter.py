@@ -479,7 +479,7 @@ class GNN_infer(nn.Module):
             h_seg.append(h_seg_new)
             f_seg.append(f_seg_new)
             decomp_map_f.append(decomp_map_f_new)
-            decomp_map_u.append(decomp_map_u)
+            decomp_map_u.append(decomp_map_u_new)
             decomp_map_l.append(decomp_map_l_new)
             comp_map_f.append(comp_map_f_new)
             comp_map_u.append(comp_map_u_new)
