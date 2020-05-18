@@ -12,12 +12,12 @@ from torch.nn import functional as F
 from torch.nn.parallel.scatter_gather import gather
 from torch.utils import data
 
-from dataset.dataloader import DataGenerator
+from dataset.data_pascal import DataGenerator
 # from dataset.datasets import DatasetGenerator
-from network.abr_gnn_att28 import get_model
+from network.gnn_iter import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
-from utils.lovasz_loss import gnn_iter_ABRLovaszLoss as ABRLovaszLoss
+from utils.gnn_loss import gnn_loss as ABRLovaszLoss
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions
@@ -48,7 +48,7 @@ def parse_args():
     parser.add_argument('--snapshot_dir', type=str, default='./checkpoints/exp/')
     parser.add_argument('--log-dir', type=str, default='./runs/')
     parser.add_argument('--init', action="store_true")
-    parser.add_argument('--save-num', type=int, default=4)
+    parser.add_argument('--save-num', type=int, default=2)
     # Misc
     parser.add_argument('--seed', type=int, default=123)
     args = parser.parse_args()
@@ -75,7 +75,7 @@ def main(args):
 
     if not os.path.exists(args.snapshot_dir):
         os.makedirs(args.snapshot_dir)
-    writer = SummaryWriter(logdir=os.path.join(args.log_dir, args.method))
+    writer = SummaryWriter(log_dir=os.path.join(args.log_dir, args.method))
 
     random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -112,7 +112,9 @@ def main(args):
                                  batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     # define criterion & optimizer
-    criterion = ABRLovaszLoss(ignore_index=args.ignore_label, only_present=True)
+    criterion = ABRLovaszLoss(adj_matrix = torch.tensor(
+            [[0, 1, 0, 0, 0, 0], [1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0], [0, 1, 0, 0, 0, 1],
+             [0, 0, 0, 0, 1, 0]]), ignore_index=args.ignore_label, only_present=True, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], cls_p= args.num_classes, cls_h= args.hbody_cls, cls_f= args.fbody_cls)
     criterion = DataParallelCriterion(criterion).cuda()
 
     optimizer = optim.SGD(
@@ -130,7 +132,7 @@ def main(args):
         _ = train(model, train_loader, epoch, criterion, optimizer, writer)
 
         # validation
-        if epoch %10 ==0 or epoch > args.epochs*0.8:
+        if epoch %10 ==0 or epoch > args.epochs-10:
             val_pixacc, val_miou = validation(model, val_loader, epoch, writer)
             # save model
             if val_pixacc > best_val_pixAcc:
@@ -153,16 +155,18 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
     iter_num = 0
 
     # Iterate over data.
-    bar = Bar('Processing | {}'.format('train'), max=len(train_loader))
-    bar.check_tty = False
-    for i_iter, batch in enumerate(train_loader):
+    # bar = Bar('Processing | {}'.format('train'), max=len(train_loader))
+    # bar.check_tty = False
+    from tqdm import tqdm
+    tbar = tqdm(train_loader)
+    for i_iter, batch in enumerate(tbar):
         sys.stdout.flush()
         start_time = time.time()
         iter_num += 1
         # adjust learning rate
         iters_per_epoch = len(train_loader)
         lr = adjust_learning_rate(optimizer, epoch, i_iter, iters_per_epoch, method=args.lr_mode)
-
+        # print("\n=>epoch  %d, learning_rate = %f" % (epoch, lr))
         image, label, hlabel, flabel, _ = batch
         images, labels, hlabel, flabel = image.cuda(), label.long().cuda(), hlabel.cuda(), flabel.cuda()
         torch.set_grad_enabled(True)
@@ -185,14 +189,18 @@ def train(model, train_loader, epoch, criterion, optimizer, writer):
 
         batch_time = time.time() - start_time
         # plot progress
-        bar.suffix = '{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
+        tbar.set_description('{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
                                                                                   batch_time=batch_time,
-                                                                                  loss=train_loss / iter_num)
-        bar.next()
+                                                                                  loss=train_loss / iter_num))
+        # bar.suffix = '{} / {} | Time: {batch_time:.4f} | Loss: {loss:.4f}'.format(iter_num, len(train_loader),
+        #                                                                           batch_time=batch_time,
+        #                                                                           loss=train_loss / iter_num)
+        # bar.next()
 
     epoch_loss = train_loss / iter_num
     writer.add_scalar('train_epoch_loss', epoch_loss, epoch)
-    bar.finish()
+    tbar.close()
+    # bar.finish()
 
     return epoch_loss
 
@@ -209,18 +217,18 @@ def validation(model, val_loader, epoch, writer):
     hist_fb = np.zeros((args.fbody_cls, args.fbody_cls))
 
     # Iterate over data.
-    bar = Bar('Processing {}'.format('val'), max=len(val_loader))
-    bar.check_tty = False
-    for idx, batch in enumerate(val_loader):
+    from tqdm import tqdm
+    tbar = tqdm(val_loader)
+    for idx, batch in enumerate(tbar):
         image, target, hlabel, flabel, _ = batch
         image, target, hlabel, flabel = image.cuda(), target.cuda(), hlabel.cuda(), flabel.cuda()
         with torch.no_grad():
             h, w = target.size(1), target.size(2)
             outputs = model(image)
-            outputs = gather(outputs, 0, dim=0)
-            preds = F.interpolate(input=outputs[0], size=(h, w), mode='bilinear', align_corners=True)
-            preds_hb = F.interpolate(input=outputs[1], size=(h, w), mode='bilinear', align_corners=True)
-            preds_fb = F.interpolate(input=outputs[2], size=(h, w), mode='bilinear', align_corners=True)
+            # outputs = gather(outputs, 0, dim=0)
+            preds = F.interpolate(input=outputs[0][-1], size=(h, w), mode='bilinear', align_corners=True)
+            preds_hb = F.interpolate(input=outputs[1][-1], size=(h, w), mode='bilinear', align_corners=True)
+            preds_fb = F.interpolate(input=outputs[2][-1], size=(h, w), mode='bilinear', align_corners=True)
             if idx % 50 == 0:
                 img_vis = inv_preprocess(image, num_images=args.save_num)
                 label_vis = decode_predictions(target.int(), num_images=args.save_num, num_classes=args.num_classes)
@@ -257,14 +265,16 @@ def validation(model, val_loader, epoch, writer):
             pixAcc_fb = 1.0 * total_correct_fb / (np.spacing(1) + total_label_fb)
             IoU_fb = round(np.nanmean(per_class_iu(hist_fb)) * 100, 2)
             # plot progress
-            bar.suffix = '{} / {} | pixAcc: {pixAcc:.4f}, mIoU: {IoU:.4f} |' \
-                         'pixAcc_hb: {pixAcc_hb:.4f}, mIoU_hb: {IoU_hb:.4f} |' \
-                         'pixAcc_fb: {pixAcc_fb:.4f}, mIoU_fb: {IoU_fb:.4f}'.format(idx + 1, len(val_loader),
-                                                                                    pixAcc=pixAcc, IoU=IoU,
-                                                                                    pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,
-                                                                                    pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb)
-            bar.next()
-
+            tbar.set_description('{} / {} | {pixAcc:.4f}, {IoU:.4f} |' \
+                         '{pixAcc_hb:.4f}, {IoU_hb:.4f} |' \
+                         '{pixAcc_fb:.4f}, {IoU_fb:.4f}'.format(idx + 1, len(val_loader), pixAcc=pixAcc, IoU=IoU,pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb))
+            # bar.suffix = '{} / {} | pixAcc: {pixAcc:.4f}, mIoU: {IoU:.4f} |' \
+            #              'pixAcc_hb: {pixAcc_hb:.4f}, mIoU_hb: {IoU_hb:.4f} |' \
+            #              'pixAcc_fb: {pixAcc_fb:.4f}, mIoU_fb: {IoU_fb:.4f}'.format(idx + 1, len(val_loader),
+            #                                                                         pixAcc=pixAcc, IoU=IoU,
+            #                                                                         pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,
+            #                                                                         pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb)
+            # bar.next()
 
     print('\n per class iou part: {}'.format(per_class_iu(hist)*100))
     print('per class iou hb: {}'.format(per_class_iu(hist_hb)*100))
@@ -280,8 +290,8 @@ def validation(model, val_loader, epoch, writer):
     writer.add_scalar('val_mIoU_hb', mIoU_hb, epoch)
     writer.add_scalar('val_pixAcc_fb', pixAcc_fb, epoch)
     writer.add_scalar('val_mIoU_fb', mIoU_fb, epoch)
-    bar.finish()
-
+    # bar.finish()
+    tbar.close()
     return pixAcc, mIoU
 
 
