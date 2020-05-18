@@ -488,7 +488,8 @@ class GNN_infer(nn.Module):
 
         #final readout
         p_seg_final = self.final_cls(p_seg[-1], xp)
-        return p_seg.append(p_seg_final), h_seg, f_seg, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list
+        p_seg.append(p_seg_final)
+        return p_seg, h_seg, f_seg, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list
 
 class Final_cls(nn.Module):
     def __init__(self, in_dim, num_classes):
