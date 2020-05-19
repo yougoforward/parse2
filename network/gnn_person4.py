@@ -79,7 +79,7 @@ class Contexture(nn.Module):
     def forward(self, p_fea, p_seg):
         n, c, h, w = p_seg.size()
         p_att = torch.softmax(p_seg, dim=1).view(n, -1, h*w).permute(0,1,2) # n, h*w, c
-        p_center = p_fea.view(n, -1, h*w)*p_att/torch.sum(p_att, dim=1, keepdim=True) #n, C, c
+        p_center = torch.bmm(p_fea.view(n, -1, h*w),p_att)/torch.sum(p_att, dim=1, keepdim=True) #n, C, c
 
         query = self.query_conv(p_center) # n, C', c
         key = self.key_conv(p_fea).view(n, -1, h*w) # n, C', h*w
