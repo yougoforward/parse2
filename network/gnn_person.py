@@ -165,7 +165,7 @@ class conv_Update(nn.Module):
         super(conv_Update, self).__init__()
         self.hidden_dim = hidden_dim
         dtype = torch.cuda.FloatTensor
-        self.update = ConvGRU(input_dim=in_dim+hidden_dim,
+        self.update = ConvGRU(input_dim=hidden_dim,
                               hidden_dim=hidden_dim,
                               kernel_size=(1, 1),
                               num_layers=1,
@@ -175,7 +175,7 @@ class conv_Update(nn.Module):
                               return_all_layers=False)
 
     def forward(self, x, h, message):
-        _, out = self.update(torch.cat([x, message], dim=1).unsqueeze(1), [h])
+        _, out = self.update(message.unsqueeze(1), [h])
         return out[0][0]
 
 
