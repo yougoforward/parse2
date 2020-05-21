@@ -356,8 +356,8 @@ class gnn_loss2(nn.Module):
                 for k in part_list:
                     parts_onehot.append(one_hot_pb_list[k+1])
                 dp_parts_onehot = sum(parts_onehot)
-                pred_dp = F.interpolate(input=preds[-2][j], size=(h, w), mode='bilinear', align_corners=True)
-                loss_dp.append(torch.sum(ignore*self.bceloss(pred_dp, dp_parts_onehot) * ignore)/torch.sum(ignore))
+                pred_dp = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
+                loss_dp.append(torch.sum(ignore*self.bceloss(pred_dp, dp_parts_onehot.float()) * ignore)/torch.sum(ignore))
             loss_dp = sum(loss_dp)
             loss_dp_att.append(loss_dp)
         loss_dp_att = sum(loss_dp_att)

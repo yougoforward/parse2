@@ -75,7 +75,7 @@ class Contexture(nn.Module):
 
         self.project = nn.ModuleList([nn.Sequential(
             nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNor m2d(hidden_dim), nn.ReLU(inplace=False)
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
             ) for i in range(len(part_list_list))])
     def forward(self, xp_list, p_fea):
         dep_context_list = []
