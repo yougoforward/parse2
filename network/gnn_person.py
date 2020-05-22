@@ -470,7 +470,7 @@ class Final_cls(nn.Module):
 
     def forward(self, p_fea, p_seg):
         # n, c, h, w = p_seg.size()
-        _, _, h, w = p_fea.size()
+        n, _, h, w = p_fea.size()
         p_seg = F.interpolate(p_seg, (h, w), mode='bilinear', align_corners=True)
         
         p_att = torch.softmax(p_seg, dim=1).view(n, -1, h*w).permute(0,2,1) # n, h*w, c
