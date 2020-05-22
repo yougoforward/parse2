@@ -406,7 +406,7 @@ class Final_cls(nn.Module):
             nn.Conv2d(in_dim+in_dim, num_classes, kernel_size=1, padding=0, bias=True)
         )
 
-    def forward(self, p_fea, p_seg):
+    def forward(self, p_seg, p_fea):
         # n, c, h, w = p_seg.size()
         n, _, h, w = p_fea.size()
         p_seg = F.interpolate(p_seg, (h, w), mode='bilinear', align_corners=True)
