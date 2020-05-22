@@ -398,23 +398,48 @@ class GNN_infer(nn.Module):
             decomp_map_l], [comp_map_f], [comp_map_u], [comp_map_l], [Fdep_att_list]
 
 class Final_cls(nn.Module):
-    def __init__(self, in_dim, num_classes):
+    def __init__(self, in_dim=256, num_classes=7):
         super(Final_cls, self).__init__()
 
+        self.query_conv = nn.Conv1d(in_dim, in_dim//4, kernel_size=1)
+        self.key_conv = nn.Conv2d(in_dim, in_dim//4, kernel_size=1)
         self.cls_conv = nn.Sequential(
-            nn.Conv2d(in_dim+num_classes, in_dim, kernel_size=3, padding=1, bias=False), 
-            BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, bias=False), 
-            BatchNorm2d(in_dim), nn.ReLU(inplace=False),
             nn.Dropout2d(0.1),
-            nn.Conv2d(in_dim, num_classes, kernel_size=1, padding=0, bias=True)
+            nn.Conv2d(in_dim+in_dim, num_classes, kernel_size=1, padding=0, bias=True)
         )
 
-    def forward(self, xp, score):
-        _, _, h, w = xp.size()
-        up_score = F.interpolate(score, (h, w), mode='bilinear', align_corners=True)
-        new_score = self.cls_conv(torch.cat([xp, up_score], dim=1))
-        return new_score
+    def forward(self, p_fea, p_seg):
+        n, c, h, w = p_seg.size()
+        p_att = torch.softmax(p_seg, dim=1).view(n, -1, h*w).permute(0,2,1) # n, h*w, c
+        p_center = torch.bmm(p_fea.view(n, -1, h*w),p_att)/torch.sum(p_att, dim=1, keepdim=True) #n, C, c
+
+        query = self.query_conv(p_center) # n, C', c
+        key = self.key_conv(p_fea).view(n, -1, h*w) # n, C', h*w
+        
+        energy = torch.bmm(query.permute(0,2,1), key) #n, c, h*w
+        attention = torch.softmax(energy, dim=1)
+        new_fea = torch.bmm(p_center, attention).view(n, -1, h, w) #n, C, h*w
+        new_seg = self.cls_conv(torch.cat([p_fea, new_fea], dim=1))
+        return new_seg
+
+# class Final_cls(nn.Module):
+#     def __init__(self, in_dim, num_classes):
+#         super(Final_cls, self).__init__()
+
+#         self.cls_conv = nn.Sequential(
+#             nn.Conv2d(in_dim+num_classes, in_dim, kernel_size=3, padding=1, bias=False), 
+#             BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+#             nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, bias=False), 
+#             BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(in_dim, num_classes, kernel_size=1, padding=0, bias=True)
+#         )
+
+#     def forward(self, xp, score):
+#         _, _, h, w = xp.size()
+#         up_score = F.interpolate(score, (h, w), mode='bilinear', align_corners=True)
+#         new_score = self.cls_conv(torch.cat([xp, up_score], dim=1))
+#         return new_score
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
