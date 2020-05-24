@@ -44,8 +44,8 @@ class ASPPModule(nn.Module):
                                         InPlaceABNSync(out_dim),
                                         nn.Conv2d(out_dim, 5, 1, bias=True),
                                         nn.Sigmoid())
-        self.se = nn.Sequential(nn.Conv2d(out_dim, out_dim, 1, bias=True),
-                            nn.Sigmoid())
+        # self.se = nn.Sequential(nn.Conv2d(out_dim, out_dim, 1, bias=True),
+        #                     nn.Sigmoid())
 
         self.project = nn.Sequential(nn.Conv2d(out_dim * 5, out_dim, kernel_size=1, padding=0, bias=False),
                                        InPlaceABNSync(out_dim))
@@ -57,7 +57,7 @@ class ASPPModule(nn.Module):
         feat3 = self.dilation_3(x)
         n, c, h, w = feat0.size()
         gp = self.gap(x)
-        se = self.se(gp)
+        # se = self.se(gp)
 
         feat4 = gp.expand(n, c, h, w)
         # feat4 = F.interpolate(gp, (h, w), mode="bilinear", align_corners=True)
