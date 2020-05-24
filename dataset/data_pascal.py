@@ -65,9 +65,9 @@ class DataGenerator(data.Dataset):
 
         if self.training:
             #colorjitter
-            if self.img_transform is not None:
-                img = self.img_transform(img)
-                img = np.array(img).astype(np.uint8)
+            # if self.img_transform is not None:
+            #     img = self.img_transform(img)
+            #     img = np.array(img).astype(np.uint8)
 
             # random scale
             ratio = random.uniform(0.5, 2.0)
