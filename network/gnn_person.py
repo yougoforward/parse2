@@ -191,7 +191,6 @@ class DecoderModule(nn.Module):
     def forward(self, xt, xm):
         _, _, h, w = xm.size()
         xt = self.conv0(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
-        _, _, th, tw = xl.size()
         xt_fea = self.conv1(xt)
         return xt_fea
 
