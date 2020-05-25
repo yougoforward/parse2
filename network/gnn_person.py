@@ -404,7 +404,7 @@ class GNN_infer(nn.Module):
         self.p_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
 
         #final seg
-        self.final_cls = Final_cls(in_dim=48, hidden_dim, self.cls_p)
+        self.final_cls = Final_cls(48, hidden_dim, self.cls_p)
         self.down = nn.Sequential(nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, dilation=1, bias=False), BatchNorm2d(256), nn.ReLU(inplace=False))
 
     def forward(self, xp, xh, xf, xl):
