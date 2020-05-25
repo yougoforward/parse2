@@ -23,6 +23,8 @@ class gnn_loss(nn.Module):
         self.only_present = only_present
         self.weight = torch.FloatTensor([0.82877791, 0.95688253, 0.94921949, 1.00538108, 1.0201687,  1.01665831, 1.05470914])
         self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
+        self.criterion2 = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=None)
+
         self.upper_part_list = upper_part_list
         self.lower_part_list = lower_part_list
         self.num_classes = cls_p
@@ -37,8 +39,9 @@ class gnn_loss(nn.Module):
         loss=[]
         for i in range(len(preds[0])-1):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
-            pred = F.softmax(input=pred, dim=1)
-            loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
+            loss.append(self.criterion(pred, targets[0]))
+            # pred = F.softmax(input=pred, dim=1)
+        #     loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
         loss = sum(loss)
 
         #part seg loss final
@@ -46,31 +49,46 @@ class gnn_loss(nn.Module):
         pred = F.softmax(input=pred0, dim=1)
         #lovasz loss
         lovasz_loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
-        #aaf loss
-        aaf_loss = self.aaf_loss(pred, targets[0])
+        # #aaf loss
+        # aaf_loss = self.aaf_loss(pred, targets[0])
         #ce loss
         loss_ce = self.criterion(pred0, targets[0])
 
-        loss = loss + lovasz_loss + aaf_loss + loss_ce
-        # loss = loss + lovasz_loss + loss_ce
+        # loss = loss + lovasz_loss + aaf_loss + loss_ce
+        loss = loss + lovasz_loss + loss_ce
 
         # half body
         loss_hb = []
-        for i in range(len(preds[1])):
+        for i in range(len(preds[1])-1):
             pred_hb = F.interpolate(input=preds[1][i], size=(h, w), mode='bilinear', align_corners=True)
-            pred_hb = F.softmax(input=pred_hb, dim=1)
-            loss_hb.append(lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
-                                      only_present=self.only_present))
+            loss_hb.append(self.criterion2(pred_hb, targets[1]))
+
+            # pred_hb = F.softmax(input=pred_hb, dim=1)
+            # loss_hb.append(lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
+            #                           only_present=self.only_present))
         loss_hb = sum(loss_hb)
+        #half seg loss final
+        pred_hb = F.interpolate(input=preds[1][-1], size=(h, w), mode='bilinear', align_corners=True)
+        pred_hb = F.softmax(input=pred_hb, dim=1)
+        loss_hb += lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
+                                      only_present=self.only_present)
+
 
         # full body
         loss_fb = []
         for i in range(len(preds[2])):
             pred_fb = F.interpolate(input=preds[2][i], size=(h, w), mode='bilinear', align_corners=True)
-            pred_fb = F.softmax(input=pred_fb, dim=1)
-            loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
-                                      only_present=self.only_present))
+            loss_fb.append(self.criterion2(pred_fb, targets[2]))
+
+            # pred_fb = F.softmax(input=pred_fb, dim=1)
+            # loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
+            #                           only_present=self.only_present))
         loss_fb = sum(loss_fb)
+        #full seg loss final
+        pred_fb = F.interpolate(input=preds[2][-1], size=(h, w), mode='bilinear', align_corners=True)
+        pred_fb = F.softmax(input=pred_fb, dim=1)
+        loss_fb += lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
+                                      only_present=self.only_present)
 
         #decomp fh
         loss_fh_att = []
@@ -123,9 +141,10 @@ class gnn_loss(nn.Module):
         loss_up_att = []
         for i in range(len(preds[4])):
             pred_up = F.interpolate(input=preds[4][i], size=(h, w), mode='bilinear', align_corners=True)
-            pred_up = F.softmax(input=pred_up, dim=1)
-            loss_up_att.append(lovasz_softmax_flat(*flatten_probas(pred_up, targets_up, self.ignore_index),
-                                                   only_present=self.only_present))
+            loss_up_att.append(self.criterion2(pred_up, targets_up))
+            # pred_up = F.softmax(input=pred_up, dim=1)
+            # loss_up_att.append(lovasz_softmax_flat(*flatten_probas(pred_up, targets_up, self.ignore_index),
+            #                                        only_present=self.only_present))
         loss_up_att = sum(loss_up_att)
         #decomp lp
         lower_bg_node = 1-one_hot_hb_list[2]
@@ -138,9 +157,10 @@ class gnn_loss(nn.Module):
         loss_lp_att = []
         for i in range(len(preds[5])):
             pred_lp = F.interpolate(input=preds[5][i], size=(h, w), mode='bilinear', align_corners=True)
-            pred_lp = F.softmax(input=pred_lp, dim=1)
-            loss_lp_att.append(lovasz_softmax_flat(*flatten_probas(pred_lp, targets_lp, self.ignore_index),
-                                                   only_present=self.only_present))
+            loss_lp_att.append(self.criterion2(pred_lp, targets_lp))
+            # pred_lp = F.softmax(input=pred_lp, dim=1)
+            # loss_lp_att.append(lovasz_softmax_flat(*flatten_probas(pred_lp, targets_lp, self.ignore_index),
+            #                                        only_present=self.only_present))
         loss_lp_att = sum(loss_lp_att)
 
         # comp_f bce loss 
@@ -177,9 +197,10 @@ class gnn_loss(nn.Module):
                 targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
                 targets_dp[targets[0] == self.ignore_index] = self.ignore_index
                 pred_dp = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
-                pred_dp = F.softmax(input=pred_dp, dim=1)
-                loss_dp.append(lovasz_softmax_flat(*flatten_probas(pred_dp, targets_dp, self.ignore_index),
-                                                   only_present=self.only_present))
+                loss_dp.append(self.criterion2(pred_dp, targets_dp))
+                # pred_dp = F.softmax(input=pred_dp, dim=1)
+                # loss_dp.append(lovasz_softmax_flat(*flatten_probas(pred_dp, targets_dp, self.ignore_index),
+                #                                    only_present=self.only_present))
             loss_dp = sum(loss_dp)
             loss_dp_att.append(loss_dp)
         loss_dp_att = sum(loss_dp_att)
