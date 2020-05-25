@@ -503,7 +503,7 @@ class Final_cls(nn.Module):
     def forward(self, p_node_list, xl):
         _, _, h, w = xl.size()
         xl = self.conv2(xl)
-        p_node_list_final = [torch.cat([F.interpolate(p_node_list[i], (h, w), mode='bilinear', align_corners=True), xl], dim=1)) for i in range(self.num_classes)]
+        p_node_list_final = [torch.cat([F.interpolate(p_node_list[i], (h, w), mode='bilinear', align_corners=True), xl], dim=1) for i in range(self.num_classes)]
         new_score = self.cls_conv(torch.cat(p_node_list_final, dim=1))
         return new_score
 
