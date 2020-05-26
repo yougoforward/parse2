@@ -212,7 +212,7 @@ class gnn_loss(nn.Module):
         loss_dsn = self.criterion(pred_dsn, targets[0])
         # return loss + 0.4 * loss_hb + 0.4 * loss_fb + \
         #        0.4*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att + loss_dp_att) + 0.4 * loss_dsn
-        return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
+        return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + 0.4*(loss_fh_att + loss_up_att + loss_lp_att)
 
 class gnn_loss2(nn.Module):
     """Lovasz loss for Alpha process"""
