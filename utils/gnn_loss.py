@@ -111,6 +111,7 @@ class gnn_loss(nn.Module):
         for i in range(0, self.num_classes):
             one_hot_pb_list[i] = one_hot_pb_list[i].squeeze(-1)
             # one_hot_pb_list[i][targets[0]==255]=255
+
         #one hot half
         labels_h = targets[1]
         one_label_h = labels_h.clone().long()
@@ -120,6 +121,7 @@ class gnn_loss(nn.Module):
         for i in range(0, self.cls_h):
             one_hot_hb_list[i] = one_hot_hb_list[i].squeeze(-1)
             # one_hot_hb_list[i][targets[1]==255]=255
+
         #one hot full
         labels_f = targets[2]
         one_label_f = labels_f.clone().long()
@@ -129,6 +131,7 @@ class gnn_loss(nn.Module):
         for i in range(0, self.cls_f):
             one_hot_fb_list[i] = one_hot_fb_list[i].squeeze(-1)
             # one_hot_fb_list[i][targets[2]==255]=255
+
         # #
         ignore = (targets[0] != self.ignore_index).float().unsqueeze(1)
 
@@ -137,7 +140,7 @@ class gnn_loss(nn.Module):
         upper_parts=[]
         for i in self.upper_part_list:
             upper_parts.append(one_hot_pb_list[i])
-        targets_up = torch.stack([upper_bg_node] + upper_parts, dim=1)
+        targets_up = torch.stack([upper_bg_node.long()] + upper_parts, dim=1)
         targets_up = targets_up.argmax(dim=1, keepdim=False)
         targets_up[targets[0] == self.ignore_index] = self.ignore_index
         loss_up_att = []
@@ -153,7 +156,7 @@ class gnn_loss(nn.Module):
         lower_parts = []
         for i in self.lower_part_list:
             lower_parts.append(one_hot_pb_list[i])
-        targets_lp = torch.stack([lower_bg_node]+lower_parts, dim=1)
+        targets_lp = torch.stack([lower_bg_node.long()]+lower_parts, dim=1)
         targets_lp = targets_lp.argmax(dim=1,keepdim=False)
         targets_lp[targets[0]==self.ignore_index]=self.ignore_index
         loss_lp_att = []
@@ -165,47 +168,47 @@ class gnn_loss(nn.Module):
             #                                        only_present=self.only_present))
         loss_lp_att = sum(loss_lp_att)
 
-        # # comp_f bce loss 
-        # com_full_onehot = one_hot_fb_list[1].float().unsqueeze(1)
-        # com_u_onehot = one_hot_hb_list[1].float().unsqueeze(1)
-        # com_l_onehot = one_hot_hb_list[2].float().unsqueeze(1)
-        # com_onehot = torch.cat([com_full_onehot,com_u_onehot, com_l_onehot], dim=1)
-        # loss_com_att = []
-        # for i in range(len(preds[6])):
-        #     pred_com_full = F.interpolate(input=preds[6][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     pred_com_u = F.interpolate(input=preds[7][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     pred_com_l = F.interpolate(input=preds[8][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     loss_com_att.append(torch.sum(ignore*self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1), com_onehot) * ignore)/torch.sum(ignore))
-        # loss_com_att = sum(loss_com_att)
+        # comp_f bce loss 
+        com_full_onehot = one_hot_fb_list[1].float().unsqueeze(1)
+        com_u_onehot = one_hot_hb_list[1].float().unsqueeze(1)
+        com_l_onehot = one_hot_hb_list[2].float().unsqueeze(1)
+        com_onehot = torch.cat([com_full_onehot,com_u_onehot, com_l_onehot], dim=1)
+        loss_com_att = []
+        for i in range(len(preds[6])):
+            pred_com_full = F.interpolate(input=preds[6][i], size=(h, w), mode='bilinear', align_corners=True)
+            pred_com_u = F.interpolate(input=preds[7][i], size=(h, w), mode='bilinear', align_corners=True)
+            pred_com_l = F.interpolate(input=preds[8][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss_com_att.append(torch.sum(ignore*self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1), com_onehot) * ignore)/torch.sum(ignore))
+        loss_com_att = sum(loss_com_att)
 
         # # comp_u bce loss 
 
         # # comp_l bce loss 
 
 
-        # # dependency decomposition
-        # # loss_context_att =[]
-        # loss_dp_att = []
-        # for i in range(len(preds[-2])):
-        #     # loss_context = []
-        #     loss_dp = []
-        #     for j in range(self.num_classes-1):
-        #         part_list = self.part_list_list[j]
-        #         parts_onehot = []
-        #         for k in part_list:
-        #             parts_onehot.append(one_hot_pb_list[k+1])
-        #         parts_bg_node = 1-sum(parts_onehot)
-        #         targets_dp_onehot = torch.stack([parts_bg_node] + parts_onehot, dim=1)
-        #         targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
-        #         targets_dp[targets[0] == self.ignore_index] = self.ignore_index
-        #         pred_dp = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
-        #         loss_dp.append(self.criterion2(pred_dp, targets_dp))
-        #         # pred_dp = F.softmax(input=pred_dp, dim=1)
-        #         # loss_dp.append(lovasz_softmax_flat(*flatten_probas(pred_dp, targets_dp, self.ignore_index),
-        #         #                                    only_present=self.only_present))
-        #     loss_dp = sum(loss_dp)
-        #     loss_dp_att.append(loss_dp)
-        # loss_dp_att = sum(loss_dp_att)
+        # dependency decomposition
+        # loss_context_att =[]
+        loss_dp_att = []
+        for i in range(len(preds[-2])):
+            # loss_context = []
+            loss_dp = []
+            for j in range(self.num_classes-1):
+                part_list = self.part_list_list[j]
+                parts_onehot = []
+                for k in part_list:
+                    parts_onehot.append(one_hot_pb_list[k+1])
+                parts_bg_node = 1-sum(parts_onehot)
+                targets_dp_onehot = torch.stack([parts_bg_node] + parts_onehot, dim=1)
+                targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
+                targets_dp[targets[0] == self.ignore_index] = self.ignore_index
+                pred_dp = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
+                loss_dp.append(self.criterion2(pred_dp, targets_dp))
+                # pred_dp = F.softmax(input=pred_dp, dim=1)
+                # loss_dp.append(lovasz_softmax_flat(*flatten_probas(pred_dp, targets_dp, self.ignore_index),
+                #                                    only_present=self.only_present))
+            loss_dp = sum(loss_dp)
+            loss_dp_att.append(loss_dp)
+        loss_dp_att = sum(loss_dp_att)
 
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
