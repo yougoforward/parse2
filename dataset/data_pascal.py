@@ -67,13 +67,13 @@ class DataGenerator(data.Dataset):
 
         if self.training:
             # #colorjitter
-            # if self.img_transform is not None:
-            #     img = self.img_transform(img)
-            #     if random.random() < 0.5:
-            #         seg = Image.fromarray(seg)
-            #         img, seg = self.random_rotate(img, seg)
-            #         seg = np.array(seg).astype(np.uint8)
-            #     img = np.array(img).astype(np.uint8)
+            if self.img_transform is not None:
+                img = self.img_transform(img)
+                if random.random() < 0.5:
+                    seg = Image.fromarray(seg)
+                    img, seg = self.random_rotate(img, seg)
+                    seg = np.array(seg).astype(np.uint8)
+                img = np.array(img).astype(np.uint8)
 
 
             # random scale
