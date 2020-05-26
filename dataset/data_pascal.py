@@ -52,10 +52,7 @@ class DataGenerator(data.Dataset):
         self.segs = segs
         self.crop_size = crop_size
         self.training = training
-        self.img_transform = transforms.RandomApply([
-            transforms.ToPILImage(mode=None),
-            transforms.ColorJitter(brightness=0.1, contrast=0.5, saturation=0.5, hue=0.1)],
-            p=0.5)
+        self.colorjitter = transforms.ColorJitter(brightness=0.1, contrast=0.5, saturation=0.5, hue=0.1)
         self.random_rotate=RandomRotate(20)
 
     def __getitem__(self, index):
@@ -66,16 +63,16 @@ class DataGenerator(data.Dataset):
         seg = cv2.imread(self.segs[index], cv2.IMREAD_GRAYSCALE)
 
         if self.training:
-            # #colorjitter
-            if self.img_transform is not None:
-                img = self.img_transform(img)
-                if random.random() < 0.5:
-                    seg = Image.fromarray(seg)
-                    img, seg = self.random_rotate(img, seg)
-                    seg = np.array(seg).astype(np.uint8)
+
+            #colorjitter and rotate
+            if random.random() < 0.5:
+                img = Image.fromarray(img)
+                seg = Image.fromarray(seg)
+                img = self.colorjitter(img)
+                img, seg = self.random_rotate(img, seg)
                 img = np.array(img).astype(np.uint8)
-
-
+                seg = np.array(seg).astype(np.uint8)
+            
             # random scale
             ratio = random.uniform(0.5, 2.0)
             img = cv2.resize(img, None, fx=ratio, fy=ratio, interpolation=cv2.INTER_LINEAR)
