@@ -52,9 +52,9 @@ class DataGenerator(data.Dataset):
         self.segs = segs
         self.crop_size = crop_size
         self.training = training
-        self.img_transform = transforms.RandomApply(transforms.Compose([
+        self.img_transform = transforms.RandomApply([
             transforms.ToPILImage(mode=None),
-            transforms.ColorJitter(brightness=0.1, contrast=0.5, saturation=0.5, hue=0.1)]),
+            transforms.ColorJitter(brightness=0.1, contrast=0.5, saturation=0.5, hue=0.1)],
             p=0.5)
         self.random_rotate=RandomRotate(20)
 
