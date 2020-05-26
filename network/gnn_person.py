@@ -404,7 +404,7 @@ class GNN_infer(nn.Module):
 
         #final seg
         self.final_cls = Final_cls(48, hidden_dim, self.cls_p)
-        self.down = nn.Sequential(nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, dilation=1, bias=False), BatchNorm2d(256), nn.ReLU(inplace=False))
+        # self.down = nn.Sequential(nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, dilation=1, bias=False), BatchNorm2d(256), nn.ReLU(inplace=False))
 
     def forward(self, xp, xh, xf, xl):
         # _, _, th, tw = xp.size()
@@ -412,11 +412,11 @@ class GNN_infer(nn.Module):
         #
         # xh = F.interpolate(xh, (th, tw), mode='bilinear', align_corners=True)
         # xf = F.interpolate(xf, (th, tw), mode='bilinear', align_corners=True)
-        xp_down = self.down(xp)
+        # xp_down = self.down(xp)
         # gnn inference at stride 8
         # feature transform
         f_node_list = list(torch.split(self.f_conv(xf), self.hidden_dim, dim=1))
-        p_node_list = list(torch.split(self.p_conv(xp_down), self.hidden_dim, dim=1))
+        p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
         h_node_list = list(torch.split(self.h_conv(xh), self.hidden_dim, dim=1))
 
         # node supervision
@@ -425,7 +425,7 @@ class GNN_infer(nn.Module):
         p_seg = self.p_seg(torch.cat(p_node_list, dim=1))
 
         # gnn infer
-        p_node_list_new, h_node_list_new, f_node_new, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list = self.gnn(p_node_list[1:], h_node_list[1:], f_node_list[1], xp_down, xh, xf)
+        p_node_list_new, h_node_list_new, f_node_new, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list = self.gnn(p_node_list[1:], h_node_list[1:], f_node_list[1], xp, xh, xf)
 
         # node supervision new
         f_seg_new = self.f_seg(torch.cat([f_node_list[0], f_node_new], dim=1))
