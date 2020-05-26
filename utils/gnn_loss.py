@@ -140,7 +140,7 @@ class gnn_loss(nn.Module):
         upper_parts=[]
         for i in self.upper_part_list:
             upper_parts.append(one_hot_pb_list[i])
-        targets_up = torch.stack([upper_bg_node.long()] + upper_parts, dim=1)
+        targets_up = torch.stack([upper_bg_node] + upper_parts, dim=1)
         targets_up = targets_up.argmax(dim=1, keepdim=False)
         targets_up[targets[0] == self.ignore_index] = self.ignore_index
         loss_up_att = []
@@ -156,7 +156,7 @@ class gnn_loss(nn.Module):
         lower_parts = []
         for i in self.lower_part_list:
             lower_parts.append(one_hot_pb_list[i])
-        targets_lp = torch.stack([lower_bg_node.long()]+lower_parts, dim=1)
+        targets_lp = torch.stack([lower_bg_node]+lower_parts, dim=1)
         targets_lp = targets_lp.argmax(dim=1,keepdim=False)
         targets_lp[targets[0]==self.ignore_index]=self.ignore_index
         loss_lp_att = []
