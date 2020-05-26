@@ -167,7 +167,7 @@ class conv_Update(nn.Module):
         dtype = torch.cuda.FloatTensor
         self.update = ConvGRU(input_dim=hidden_dim,
                               hidden_dim=hidden_dim,
-                              kernel_size=(1, 1),
+                              kernel_size=(3, 3),
                               num_layers=1,
                               dtype=dtype,
                               batch_first=True,
@@ -404,15 +404,8 @@ class GNN_infer(nn.Module):
 
         #final seg
         self.final_cls = Final_cls(48, hidden_dim, self.cls_p)
-        # self.down = nn.Sequential(nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, dilation=1, bias=False), BatchNorm2d(256), nn.ReLU(inplace=False))
 
     def forward(self, xp, xh, xf, xl):
-        # _, _, th, tw = xp.size()
-        # _, _, h, w = xh.size()
-        #
-        # xh = F.interpolate(xh, (th, tw), mode='bilinear', align_corners=True)
-        # xf = F.interpolate(xf, (th, tw), mode='bilinear', align_corners=True)
-        # xp_down = self.down(xp)
         # gnn inference at stride 8
         # feature transform
         f_node_list = list(torch.split(self.f_conv(xf), self.hidden_dim, dim=1))
@@ -483,7 +476,6 @@ class GNN_infer(nn.Module):
 #         up_score = F.interpolate(score, (h, w), mode='bilinear', align_corners=True)
 #         new_score = self.cls_conv(torch.cat([xp, up_score], dim=1))
 #         return new_score
-
 class Final_cls(nn.Module):
     def __init__(self, in_dim, hidden_dim, num_classes):
         super(Final_cls, self).__init__()
