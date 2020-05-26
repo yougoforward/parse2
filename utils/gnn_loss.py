@@ -15,7 +15,7 @@ class gnn_loss(nn.Module):
         super(gnn_loss, self).__init__()
         self.edge_index = torch.nonzero(adj_matrix)
         self.edge_index_num = self.edge_index.shape[0]
-        self.part_list_list = [[i] for i in range(cls_p - 1)]
+        self.part_list_list = [[] for i in range(cls_p - 1)]
         for i in range(self.edge_index_num):
             self.part_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
 
@@ -202,10 +202,10 @@ class gnn_loss(nn.Module):
                 targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
                 targets_dp[targets[0] == self.ignore_index] = self.ignore_index
                 pred_dp = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
-                # loss_dp.append(self.criterion2(pred_dp, targets_dp))
-                pred_dp = F.softmax(input=pred_dp, dim=1)
-                loss_dp.append(lovasz_softmax_flat(*flatten_probas(pred_dp, targets_dp, self.ignore_index),
-                                                   only_present=self.only_present))
+                loss_dp.append(self.criterion2(pred_dp, targets_dp))
+                # pred_dp = F.softmax(input=pred_dp, dim=1)
+                # loss_dp.append(lovasz_softmax_flat(*flatten_probas(pred_dp, targets_dp, self.ignore_index),
+                #                                    only_present=self.only_present))
             loss_dp = sum(loss_dp)
             loss_dp_att.append(loss_dp)
         loss_dp_att = sum(loss_dp_att)
@@ -224,7 +224,7 @@ class gnn_loss2(nn.Module):
         super(gnn_loss2, self).__init__()
         self.edge_index = torch.nonzero(adj_matrix)
         self.edge_index_num = self.edge_index.shape[0]
-        self.part_list_list = [[i] for i in range(cls_p - 1)]
+        self.part_list_list = [[] for i in range(cls_p - 1)]
         for i in range(self.edge_index_num):
             self.part_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
 
@@ -402,7 +402,7 @@ class gnn_loss3(nn.Module):
         super(gnn_loss3, self).__init__()
         self.edge_index = torch.nonzero(adj_matrix)
         self.edge_index_num = self.edge_index.shape[0]
-        self.part_list_list = [[i] for i in range(cls_p - 1)]
+        self.part_list_list = [[] for i in range(cls_p - 1)]
         for i in range(self.edge_index_num):
             self.part_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
 
