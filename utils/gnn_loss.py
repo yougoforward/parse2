@@ -140,7 +140,7 @@ class gnn_loss(nn.Module):
         upper_parts=[]
         for i in self.upper_part_list:
             upper_parts.append(one_hot_pb_list[i])
-        targets_up = torch.stack([upper_bg_node] + upper_parts, dim=1)
+        targets_up = torch.stack([upper_bg_node.long()] + upper_parts, dim=1)
         targets_up = targets_up.argmax(dim=1, keepdim=False)
         targets_up[targets[0] == self.ignore_index] = self.ignore_index
         loss_up_att = []
@@ -156,7 +156,7 @@ class gnn_loss(nn.Module):
         lower_parts = []
         for i in self.lower_part_list:
             lower_parts.append(one_hot_pb_list[i])
-        targets_lp = torch.stack([lower_bg_node]+lower_parts, dim=1)
+        targets_lp = torch.stack([lower_bg_node.long()]+lower_parts, dim=1)
         targets_lp = targets_lp.argmax(dim=1,keepdim=False)
         targets_lp[targets[0]==self.ignore_index]=self.ignore_index
         loss_lp_att = []
@@ -202,10 +202,10 @@ class gnn_loss(nn.Module):
                 targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
                 targets_dp[targets[0] == self.ignore_index] = self.ignore_index
                 pred_dp = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
-                loss_dp.append(self.criterion2(pred_dp, targets_dp))
-                # pred_dp = F.softmax(input=pred_dp, dim=1)
-                # loss_dp.append(lovasz_softmax_flat(*flatten_probas(pred_dp, targets_dp, self.ignore_index),
-                #                                    only_present=self.only_present))
+                # loss_dp.append(self.criterion2(pred_dp, targets_dp))
+                pred_dp = F.softmax(input=pred_dp, dim=1)
+                loss_dp.append(lovasz_softmax_flat(*flatten_probas(pred_dp, targets_dp, self.ignore_index),
+                                                   only_present=self.only_present))
             loss_dp = sum(loss_dp)
             loss_dp_att.append(loss_dp)
         loss_dp_att = sum(loss_dp_att)
