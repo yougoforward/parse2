@@ -102,7 +102,7 @@ class ABRLovaszCELoss(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return  loss_ce+loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
+        return  0.5 * (loss_ce + loss) + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
 
 class ABRLovaszCEAAFLoss(nn.Module):
     """Lovasz loss for Alpha process"""
