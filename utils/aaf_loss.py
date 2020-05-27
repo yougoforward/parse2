@@ -40,22 +40,20 @@ class AAF_Loss(nn.Module):
         self.w_not_edge_softmax = nn.Softmax(dim=-1)
         self.ignore_index = ignore_index
 
-    def forward(self, preds, targets):
+    def forward(self, pred, targets):
         h, w = targets.size(1), targets.size(2)
         # seg loss
-        # pred = F.interpolate(input=preds, size=(h, w), mode='bilinear', align_corners=True)
+        # pred = F.interpolate(input=pred, size=(h, w), mode='bilinear', align_corners=True)
         # pred = F.softmax(input=pred, dim=1)
-        pred = preds
         #aaf loss
-        labels = targets
-        one_label=labels.clone()
-        one_label[labels==self.ignore_index]=0
+        one_label=targets.clone()
+        one_label[targets==self.ignore_index]=0
         one_hot_lab=F.one_hot(one_label, num_classes=self.num_classes)
 
         targets_p_node_list = list(torch.split(one_hot_lab,1, dim=3))
         for i in range(self.num_classes):
             targets_p_node_list[i] = targets_p_node_list[i].squeeze(-1)
-            targets_p_node_list[i][labels==self.ignore_index]=255
+            targets_p_node_list[i][targets==self.ignore_index]=self.ignore_index
         one_hot_lab = torch.stack(targets_p_node_list, dim=-1)
 
         prob = pred
@@ -64,32 +62,35 @@ class AAF_Loss(nn.Module):
 
         # w_edge_shape=list(w_edge.shape)
         # Apply AAF on 3x3 patch.
-        eloss_1, neloss_1 = lossx.adaptive_affinity_loss(labels,
+        eloss_1, neloss_1 = lossx.adaptive_affinity_loss(targets,
                                                          one_hot_lab,
                                                          prob,
                                                          1,
                                                          self.num_classes,
                                                          self.kld_margin,
                                                          w_edge[..., 0],
-                                                         w_not_edge[..., 0])
+                                                         w_not_edge[..., 0],
+                                                         self.ignore_index)
         # Apply AAF on 5x5 patch.
-        eloss_2, neloss_2 = lossx.adaptive_affinity_loss(labels,
+        eloss_2, neloss_2 = lossx.adaptive_affinity_loss(targets,
                                                          one_hot_lab,
                                                          prob,
                                                          2,
                                                          self.num_classes,
                                                          self.kld_margin,
                                                          w_edge[..., 1],
-                                                         w_not_edge[..., 1])
+                                                         w_not_edge[..., 1],
+                                                         self.ignore_index)
         # Apply AAF on 7x7 patch.
-        # eloss_3, neloss_3 = lossx.adaptive_affinity_loss(labels,
+        # eloss_3, neloss_3 = lossx.adaptive_affinity_loss(targets,
         #                                                  one_hot_lab,
         #                                                  prob,
         #                                                  3,
         #                                                  self.num_classes,
         #                                                  self.kld_margin,
         #                                                  w_edge[..., 2],
-        #                                                  w_not_edge[..., 2])
+        #                                                  w_not_edge[..., 2],
+        #                                                  self.ignore_index)
         dec = self.dec
         aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1*dec
         aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1*dec
