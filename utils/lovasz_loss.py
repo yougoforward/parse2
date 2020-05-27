@@ -102,7 +102,9 @@ class ABRLovaszCELoss(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return  0.5 * (loss_ce + loss) + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
+        total_loss =  0.5 * (loss_ce + loss) + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
+        
+        return total_loss
 
 class ABRLovaszCEAAFLoss(nn.Module):
     """Lovasz loss for Alpha process"""
@@ -148,13 +150,13 @@ class ABRLovaszCEAAFLoss(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return  loss_aaf+loss_ce+loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
+        total_loss = 0.4*(loss_aaf+loss_ce+loss) + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
+        return  total_loss
 
 class AAF_Loss(nn.Module):
     """
     Loss function for multiple outputs
     """
-
     def __init__(self, ignore_index=255, num_classes=7):
         super(AAF_Loss, self).__init__()
         self.ignore_index = ignore_index
