@@ -84,7 +84,8 @@ def adaptive_affinity_loss(labels,
                            num_classes,
                            kld_margin,
                            w_edge,
-                           w_not_edge):
+                           w_not_edge,
+                           ignore_index=255):
   """Adaptive affinity field (AAF) loss.
 
   This function computes AAF loss. There are three components in the function:
@@ -109,18 +110,19 @@ def adaptive_affinity_loss(labels,
     kld_margin: A number indicating the margin for KL-Divergence at edge.
     w_edge: A number indicating the weighting for KL-Divergence at edge.
     w_not_edge: A number indicating the weighting for KL-Divergence at non-edge.
+    ignore_index: ignore index
 
   Returns:
     Two 1-D tensors value indicating the loss at edge and non-edge.
   """
   # Compute ignore map (e.g, label of 255 and their paired pixels).
   labels = torch.squeeze(labels, dim=1) # NxHxW
-  ignore = nnx.ignores_from_label(labels, num_classes, size) # NxHxWx8
+  ignore = nnx.ignores_from_label(labels, num_classes, size, ignore_index) # NxHxWx8
   not_ignore = ~ignore
   not_ignore = torch.unsqueeze(not_ignore, dim=3) # NxHxWx1x8
 
   # Compute edge map.
-  edge = nnx.edges_from_label(one_hot_lab, size, 255) # NxHxWxCx8
+  edge = nnx.edges_from_label(one_hot_lab, size, ignore_index) # NxHxWxCx8
 
   # Remove ignored pixels from the edge/non-edge.
   edge = edge & not_ignore

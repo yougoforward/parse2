@@ -16,7 +16,7 @@ from dataset.data_pascal import DataGenerator
 from network.abrnet2 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
-from utils.lovasz_loss import ABRLovaszLoss
+from utils.lovasz_loss import ABRLovaszCEAAFLoss as ABRLovaszLoss
 
 
 from utils.metric import *
@@ -113,7 +113,7 @@ def main(args):
                                  batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     # define criterion & optimizer
-    criterion = ABRLovaszLoss(ignore_index=args.ignore_label, only_present=True)
+    criterion = ABRLovaszLoss(ignore_index=args.ignore_label, only_present=True, num_classes=args.num_classes)
     criterion = DataParallelCriterion(criterion).cuda()
 
     optimizer = optim.SGD(

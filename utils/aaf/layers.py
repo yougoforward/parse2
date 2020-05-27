@@ -81,7 +81,7 @@ def eightcorner_activation(x, size):
   return output
 
 
-def ignores_from_label(labels, num_classes, size):
+def ignores_from_label(labels, num_classes, size, ignore_index):
   """Retrieves ignorable pixels from the ground-truth labels.
 
   This function returns a binary map in which 1 denotes ignored pixels
@@ -108,7 +108,8 @@ def ignores_from_label(labels, num_classes, size):
   n, h, w = shape_lab
 
   # Retrieve ignored pixels with label value >= num_classes.
-  ignore = labels>num_classes-1 # NxHxW
+  # ignore = labels>num_classes-1 # NxHxW
+  ignore = (labels==ignore_index)
 
   # Pad at the margin.
   p = size
