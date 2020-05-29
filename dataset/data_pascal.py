@@ -67,11 +67,11 @@ class DataGenerator(data.Dataset):
             #colorjitter and rotate
             if random.random() < 0.5:
                 img = Image.fromarray(img)
-                # seg = Image.fromarray(seg)
+                seg = Image.fromarray(seg)
                 img = self.colorjitter(img)
-                # img, seg = self.random_rotate(img, seg)
+                img, seg = self.random_rotate(img, seg)
                 img = np.array(img).astype(np.uint8)
-                # seg = np.array(seg).astype(np.uint8)
+                seg = np.array(seg).astype(np.uint8)
             
             # random scale
             ratio = random.uniform(0.5, 2.0)
