@@ -150,7 +150,7 @@ class ABRLovaszCEAAFLoss(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        total_loss = 0.4*(loss_aaf + loss_ce+loss) + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
+        total_loss = 0.4*loss_aaf + 0.4*loss_ce+loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
         return  total_loss
 
 class AAF_Loss(nn.Module):
