@@ -106,7 +106,7 @@ class ASPPModule(nn.Module):
         feat4 = gp.expand(n, c, h, w)
         # feat4 = F.interpolate(gp, (h, w), mode="bilinear", align_corners=True)
 
-        psaa
+        # psaa
         y1 = torch.cat((x, feat0, feat1, feat2, feat3, feat4), 1)
         psaa_att = self.psaa_conv(y1)
         psaa_att_list = torch.split(psaa_att, 1, dim=1)
