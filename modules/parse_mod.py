@@ -83,10 +83,10 @@ class ASPPModule(nn.Module):
                                         InPlaceABNSync(out_dim),
                                         SEModule(out_dim, reduction=16))
 
-        # self.psaa_conv = nn.Sequential(nn.Conv2d(in_dim+5 * out_dim, out_dim, 1, padding=0, bias=False),
-        #                                 InPlaceABNSync(out_dim),
-        #                                 nn.Conv2d(out_dim, 5, 1, bias=True),
-        #                                 nn.Sigmoid())
+        self.psaa_conv = nn.Sequential(nn.Conv2d(in_dim+5 * out_dim, out_dim, 1, padding=0, bias=False),
+                                        InPlaceABNSync(out_dim),
+                                        nn.Conv2d(out_dim, 5, 1, bias=True),
+                                        nn.Sigmoid())
         # self.se = nn.Sequential(nn.Conv2d(out_dim, out_dim, 1, bias=True),
         #                     nn.Sigmoid())
 
