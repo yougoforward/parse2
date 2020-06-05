@@ -124,7 +124,7 @@ class ABRLovaszCEAAFLoss(nn.Module):
         # seg loss
         pred = F.interpolate(input=preds[0], size=(h, w), mode='bilinear', align_corners=True)
         #ce loss
-        # loss_ce = self.criterion(pred, targets[0])
+        loss_ce = self.criterion(pred, targets[0])
 
         pred = F.softmax(input=pred, dim=1)
         # lovasz loss
