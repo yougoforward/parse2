@@ -14,7 +14,7 @@ class PAM_Module(nn.Module):
     def __init__(self, in_dim, key_dim, value_dim, out_dim):
         super(PAM_Module, self).__init__()
         self.chanel_in = in_dim
-        # self.pool = nn.MaxPool2d(kernel_size=2)
+        self.pool = nn.MaxPool2d(kernel_size=2)
 
         self.query_conv = nn.Conv2d(in_channels=in_dim, out_channels=key_dim, kernel_size=1)
         self.key_conv = nn.Conv2d(in_channels=in_dim, out_channels=key_dim, kernel_size=1)
@@ -32,8 +32,8 @@ class PAM_Module(nn.Module):
                 out : attention value + input feature
                 attention: B X (HxW) X (HxW)
         """
-        # xp = self.pool(x)
-        xp = x
+        xp = self.pool(x)
+        # xp = x
         m_batchsize, C, height, width = x.size()
         m_batchsize, C, hp, wp = xp.size()
         proj_query = self.query_conv(x).view(m_batchsize, -1, width*height).permute(0, 2, 1)
@@ -97,7 +97,7 @@ class ASPPModule(nn.Module):
 
         self.project = nn.Sequential(nn.Conv2d(out_dim * 5, out_dim, kernel_size=1, padding=0, bias=False),
                                        InPlaceABNSync(out_dim))
-        # self.pam0 = PAM_Module(in_dim=out_dim, key_dim=out_dim//8,value_dim=out_dim,out_dim=out_dim)
+        self.pam0 = PAM_Module(in_dim=out_dim, key_dim=out_dim//8,value_dim=out_dim,out_dim=out_dim)
     def forward(self, x):
         # parallel branch
         feat0 = self.dilation_0(x)
@@ -124,7 +124,7 @@ class ASPPModule(nn.Module):
         # y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2, psaa_att_list[3] * feat3, feat4), 1)
         # y2 = torch.cat((feat0, feat1, feat2, feat3, feat4), 1)
         out = self.project(y2)
-        # out = self.pam0(out)
+        out = self.pam0(out)
         return out
 
 
