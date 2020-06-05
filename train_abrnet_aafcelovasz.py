@@ -17,6 +17,7 @@ from network.abrnet2 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 from utils.lovasz_loss import ABRLovaszCEAAFLoss as ABRLovaszLoss
+from utils.lovasz_loss import lov_AAF_Loss as ABRLovaszLoss
 
 
 from utils.metric import *
