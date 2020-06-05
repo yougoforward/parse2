@@ -92,7 +92,7 @@ class ASPPModule(nn.Module):
 
         self.project = nn.Sequential(nn.Conv2d(out_dim * 5, out_dim, kernel_size=1, padding=0, bias=False),
                                        InPlaceABNSync(out_dim))
-        self.pam0 = PAM_Module(in_dim=out_dim, key_dim=out_dim//8,value_dim=out_dim,out_dim=out_dim)
+        # self.pam0 = PAM_Module(in_dim=out_dim, key_dim=out_dim//8,value_dim=out_dim,out_dim=out_dim)
     def forward(self, x):
         # parallel branch
         feat0 = self.dilation_0(x)
