@@ -166,8 +166,8 @@ class AAF_Loss(nn.Module):
         self.kld_margin=3.0
         self.kld_lambda_1=1.0
         self.kld_lambda_2=1.0
-        self.dec = 1e-3
-        # self.dec = 1e-2
+        # self.dec = 1e-3
+        self.dec = 1e-2
         self.softmax = nn.Softmax(dim=1)
         self.w_edge = nn.Parameter(torch.zeros(1,1,1,self.num_classes,1,3))
         self.w_edge_softmax = nn.Softmax(dim=-1)
