@@ -106,7 +106,7 @@ def main(args):
     model.cuda()
 
     # define dataloader
-    train_loader = data.DataLoader(DataGenerator(root=args.root, list_path=args.lst,
+    train_loader = data.DataLoader(DataGenerator(root=args.root, list_path=args.lst, drop_last=True,
                                                     crop_size=args.crop_size, training=True),
                                    batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
     val_loader = data.DataLoader(DataGenerator(root=args.val_root, list_path=args.val_lst,
