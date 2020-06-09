@@ -497,7 +497,7 @@ class Final_cls(nn.Module):
     def __init__(self, in_dim, hidden_dim, num_classes):
         super(Final_cls, self).__init__()
         self.num_classes = num_classes
-        self.cls_conv = nn.MoudleList([nn.Sequential(
+        self.cls_conv = nn.ModuleList([nn.Sequential(
             nn.Dropout2d(0.1),
             nn.Conv2d(in_dim+hidden_dim, 1, bias=True)
         )])
