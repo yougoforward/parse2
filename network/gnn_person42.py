@@ -363,8 +363,8 @@ class GNN_infer(nn.Module):
         p_seg_new = self.p_seg(torch.cat([p_node_list[0]]+p_node_list_new, dim=1))
 
         #final readout
-        p_seg_final = self.final_cls([p_node_list[0]]+p_node_list_new, xl)
-        return [p_seg, p_seg_new, p_seg_final], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_map_f], [decomp_map_u], [
+        # p_seg_final = self.final_cls([p_node_list[0]]+p_node_list_new, xl)
+        return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_map_f], [decomp_map_u], [
             decomp_map_l], [comp_map_f], [comp_map_u], [comp_map_l]
 
 # class Final_cls(nn.Module):
