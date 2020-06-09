@@ -499,7 +499,7 @@ class Final_cls(nn.Module):
         self.num_classes = num_classes
         self.cls_conv = nn.ModuleList([nn.Sequential(
             nn.Dropout2d(0.1),
-            nn.Conv2d(in_dim+hidden_dim, 1, bias=True)
+            nn.Conv2d(in_dim+hidden_dim, 1, 1, bias=True)
         )])
 
     def forward(self, p_node_list, xl):
