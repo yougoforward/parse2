@@ -79,8 +79,8 @@ def main():
         # cv2.waitKey(1)
         # 2008_000195 multi person
         # 2008_002829 single person
-        if name[0]=="2008_002829":
-            print("2008_002829.jpg")
+        # if name[0]=="2008_002829":
+        #     print("2008_002829.jpg")
         ori_size = ori_size[0].numpy()
 
         output = predict(model, image.numpy(), (np.asscalar(ori_size[0]), np.asscalar(ori_size[1])),
