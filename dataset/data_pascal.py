@@ -154,19 +154,19 @@ class TestGenerator(data.Dataset):
         seg = cv2.imread(self.segs[index], cv2.IMREAD_GRAYSCALE)
         ori_size = img.shape
 
-        h, w = seg.shape
-        length = max(w, h)
-        ratio = self.crop_size / length
-        img = cv2.resize(img, None, fx=ratio, fy=ratio, interpolation=cv2.INTER_LINEAR)
+        # h, w = seg.shape
+        # length = max(w, h)
+        # ratio = self.crop_size / length
+        # img = cv2.resize(img, None, fx=ratio, fy=ratio, interpolation=cv2.INTER_LINEAR)
         img = np.array(img).astype(np.float32) - mean
         img = img.transpose((2, 0, 1))
-        seg_half = seg.copy()
-        seg_half[(seg_half > 0) & (seg_half <= 4)] = 1
-        seg_half[(seg_half > 4) & (seg_half < 255)] = 2
+        # seg_half = seg.copy()
+        # seg_half[(seg_half > 0) & (seg_half <= 4)] = 1
+        # seg_half[(seg_half > 4) & (seg_half < 255)] = 2
 
         images = img.copy()
         segmentations = seg.copy()
-        segmentations_half = seg_half.copy()
+        # segmentations_half = seg_half.copy()
 
         return images, segmentations, np.array(ori_size), name
 
