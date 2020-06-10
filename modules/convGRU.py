@@ -67,9 +67,9 @@ class ConvGRUCell(nn.Module):
 
         combined = torch.cat([input_tensor, reset_gate*h_cur], dim=1)
         cc_cnm = self.conv_can(combined)
-        # cnm = torch.tanh(cc_cnm)
+        cnm = torch.tanh(cc_cnm)
 
-        h_next = (1 - update_gate) * h_cur + update_gate * cc_cnm
+        h_next = (1 - update_gate) * h_cur + update_gate * cnm
         return h_next
 
 
