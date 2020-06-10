@@ -381,6 +381,10 @@ class GNN(nn.Module):
                                      cls_h, cls_f)
 
     def forward(self, p_node_list, h_node_list, f_node, xp, xh, xf):
+        #block back propogation
+        p_node_list = [p_node_list[i].detach() for i in range(len(p_node_list))]
+        h_node_list = [h_node_list[i].detach() for i in range(len(h_node_list))]
+        f_node = f_node.detach()
         # for full body node
         f_node_new, comp_map_f = self.full_infer(f_node, h_node_list, p_node_list, xf)
         # for half body node
@@ -413,8 +417,8 @@ class GNN_infer(nn.Module):
             BatchNorm2d(hidden_dim * cls_f), nn.ReLU(inplace=False))
 
         # gnn infer
-        self.gnn = GNN(adj_matrix, upper_half_node, lower_half_node, self.in_dim, self.hidden_dim, self.cls_p,
-                       self.cls_h, self.cls_f)
+        self.gnn = nn.ModuleList([GNN(adj_matrix, upper_half_node, lower_half_node, self.in_dim, self.hidden_dim, self.cls_p,
+                       self.cls_h, self.cls_f) for i in range(2)])
 
         # node supervision
         # multi-label classifier
@@ -462,7 +466,7 @@ class GNN_infer(nn.Module):
 
         # gnn infer
         for iter in range(2):
-            p_node_list_new, h_node_list_new, f_node_new, decomp_map_f_new, decomp_map_u_new, decomp_map_l_new, comp_map_f_new, comp_map_u_new, comp_map_l_new, Fdep_att_list_new = self.gnn(p_node_list_iter[iter], h_node_list_iter[iter], f_node_list_iter[iter], xp_down, xh, xf)
+            p_node_list_new, h_node_list_new, f_node_new, decomp_map_f_new, decomp_map_u_new, decomp_map_l_new, comp_map_f_new, comp_map_u_new, comp_map_l_new, Fdep_att_list_new = self.gnn[iter](p_node_list_iter[iter], h_node_list_iter[iter], f_node_list_iter[iter], xp_down, xh, xf)
 
             # node supervision new
             f_seg_new = self.f_seg(torch.cat([f_node_list[0], f_node_new], dim=1))
