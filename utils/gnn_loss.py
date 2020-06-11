@@ -214,13 +214,13 @@ class gnn_loss(nn.Module):
         loss_dsn = self.criterion(pred_dsn, targets[0])
         # return 0.33*loss + 0.5*(0.4 * loss_hb + 0.4 * loss_fb) + \
         #        0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att + loss_dp_att) + 0.4 * loss_dsn
-        return loss/len(preds[0]) + (0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
+        return (loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
 
-class gnn_iter_loss(nn.Module):
+class gnn_s4_loss(nn.Module):
     """Lovasz loss for Alpha process"""
 
     def __init__(self, adj_matrix, ignore_index=None, only_present=True, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], cls_p=7, cls_h=3, cls_f=2):
-        super(gnn_iter_loss, self).__init__()
+        super(gnn_s4_loss, self).__init__()
         self.edge_index = torch.nonzero(adj_matrix)
         self.edge_index_num = self.edge_index.shape[0]
         self.part_list_list = [[] for i in range(cls_p - 1)]
@@ -263,7 +263,7 @@ class gnn_iter_loss(nn.Module):
         loss_ce = self.criterion(pred0, targets[0])
 
         # loss = loss + lovasz_loss + aaf_loss + loss_ce
-        loss = loss + lovasz_loss + loss_ce
+        loss_final = lovasz_loss + loss_ce
 
         # half body
         loss_hb = []
@@ -423,8 +423,7 @@ class gnn_iter_loss(nn.Module):
         loss_dsn = self.criterion(pred_dsn, targets[0])
         # return 0.33*loss + 0.5*(0.4 * loss_hb + 0.4 * loss_fb) + \
         #        0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att + loss_dp_att) + 0.4 * loss_dsn
-        # return loss/len(preds[0]) + (0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
-        return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn
+        return loss_final + (loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
 
 class gnn_loss2(nn.Module):
     """Lovasz loss for Alpha process"""

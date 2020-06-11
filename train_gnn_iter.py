@@ -14,7 +14,7 @@ from torch.utils import data
 
 from dataset.data_pascal import DataGenerator
 # from dataset.datasets import DatasetGenerator
-from network.gnn_iter import get_model
+from network.gnn_iter_s8_nodp import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 from utils.gnn_loss import gnn_loss as ABRLovaszLoss
@@ -134,6 +134,8 @@ def main(args):
         # validation
         if epoch %10 ==0 or epoch > args.epochs-10:
             val_pixacc0, val_miou0 = validation0(model, val_loader, epoch, writer)
+            val_pixacc1, val_miou1 = validation1(model, val_loader, epoch, writer)
+
             val_pixacc, val_miou = validation(model, val_loader, epoch, writer)
             # save model
             if val_pixacc > best_val_pixAcc:
@@ -296,6 +298,96 @@ def validation(model, val_loader, epoch, writer):
     return pixAcc, mIoU
 
 def validation0(model, val_loader, epoch, writer):
+    # set evaluate mode
+    model.eval()
+
+    total_correct, total_label = 0, 0
+    total_correct_hb, total_label_hb = 0, 0
+    total_correct_fb, total_label_fb = 0, 0
+    hist = np.zeros((args.num_classes, args.num_classes))
+    hist_hb = np.zeros((args.hbody_cls, args.hbody_cls))
+    hist_fb = np.zeros((args.fbody_cls, args.fbody_cls))
+
+    # Iterate over data.
+    from tqdm import tqdm
+    tbar = tqdm(val_loader)
+    for idx, batch in enumerate(tbar):
+        image, target, hlabel, flabel, _ = batch
+        image, target, hlabel, flabel = image.cuda(), target.cuda(), hlabel.cuda(), flabel.cuda()
+        with torch.no_grad():
+            h, w = target.size(1), target.size(2)
+            outputs = model(image)
+            outputs = gather(outputs, 0, dim=0)
+            preds = F.interpolate(input=outputs[0][0], size=(h, w), mode='bilinear', align_corners=True)
+            preds_hb = F.interpolate(input=outputs[1][0], size=(h, w), mode='bilinear', align_corners=True)
+            preds_fb = F.interpolate(input=outputs[2][0], size=(h, w), mode='bilinear', align_corners=True)
+            # if idx % 50 == 0:
+            #     img_vis = inv_preprocess(image, num_images=args.save_num)
+            #     label_vis = decode_predictions(target.int(), num_images=args.save_num, num_classes=args.num_classes)
+            #     pred_vis = decode_predictions(torch.argmax(preds, dim=1), num_images=args.save_num,
+            #                                   num_classes=args.num_classes)
+
+            #     # visual grids
+            #     img_grid = torchvision.utils.make_grid(torch.from_numpy(img_vis.transpose(0, 3, 1, 2)))
+            #     label_grid = torchvision.utils.make_grid(torch.from_numpy(label_vis.transpose(0, 3, 1, 2)))
+            #     pred_grid = torchvision.utils.make_grid(torch.from_numpy(pred_vis.transpose(0, 3, 1, 2)))
+            #     writer.add_image('val_images', img_grid, epoch * len(val_loader) + idx + 1)
+            #     writer.add_image('val_labels', label_grid, epoch * len(val_loader) + idx + 1)
+            #     writer.add_image('val_preds', pred_grid, epoch * len(val_loader) + idx + 1)
+
+            # pixelAcc
+            correct, labeled = batch_pix_accuracy(preds.data, target)
+            correct_hb, labeled_hb = batch_pix_accuracy(preds_hb.data, hlabel)
+            correct_fb, labeled_fb = batch_pix_accuracy(preds_fb.data, flabel)
+            # mIoU
+            hist += fast_hist(preds, target, args.num_classes)
+            hist_hb += fast_hist(preds_hb, hlabel, args.hbody_cls)
+            hist_fb += fast_hist(preds_fb, flabel, args.fbody_cls)
+
+            total_correct += correct
+            total_correct_hb += correct_hb
+            total_correct_fb += correct_fb
+            total_label += labeled
+            total_label_hb += labeled_hb
+            total_label_fb += labeled_fb
+            pixAcc = 1.0 * total_correct / (np.spacing(1) + total_label)
+            IoU = round(np.nanmean(per_class_iu(hist)) * 100, 2)
+            pixAcc_hb = 1.0 * total_correct_hb / (np.spacing(1) + total_label_hb)
+            IoU_hb = round(np.nanmean(per_class_iu(hist_hb)) * 100, 2)
+            pixAcc_fb = 1.0 * total_correct_fb / (np.spacing(1) + total_label_fb)
+            IoU_fb = round(np.nanmean(per_class_iu(hist_fb)) * 100, 2)
+            # plot progress
+            tbar.set_description('{} / {} | {pixAcc:.4f}, {IoU:.4f} |' \
+                         '{pixAcc_hb:.4f}, {IoU_hb:.4f} |' \
+                         '{pixAcc_fb:.4f}, {IoU_fb:.4f}'.format(idx + 1, len(val_loader), pixAcc=pixAcc, IoU=IoU,pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb))
+            # bar.suffix = '{} / {} | pixAcc: {pixAcc:.4f}, mIoU: {IoU:.4f} |' \
+            #              'pixAcc_hb: {pixAcc_hb:.4f}, mIoU_hb: {IoU_hb:.4f} |' \
+            #              'pixAcc_fb: {pixAcc_fb:.4f}, mIoU_fb: {IoU_fb:.4f}'.format(idx + 1, len(val_loader),
+            #                                                                         pixAcc=pixAcc, IoU=IoU,
+            #                                                                         pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,
+            #                                                                         pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb)
+            # bar.next()
+
+    print('\n per class iou part: {}'.format(per_class_iu(hist)*100))
+    print('per class iou hb: {}'.format(per_class_iu(hist_hb)*100))
+    print('per class iou fb: {}'.format(per_class_iu(hist_fb)*100))
+
+    mIoU = round(np.nanmean(per_class_iu(hist)) * 100, 2)
+    mIoU_hb = round(np.nanmean(per_class_iu(hist_hb)) * 100, 2)
+    mIoU_fb = round(np.nanmean(per_class_iu(hist_fb)) * 100, 2)
+
+    writer.add_scalar('val_pixAcc', pixAcc, epoch)
+    writer.add_scalar('val_mIoU', mIoU, epoch)
+    writer.add_scalar('val_pixAcc_hb', pixAcc_hb, epoch)
+    writer.add_scalar('val_mIoU_hb', mIoU_hb, epoch)
+    writer.add_scalar('val_pixAcc_fb', pixAcc_fb, epoch)
+    writer.add_scalar('val_mIoU_fb', mIoU_fb, epoch)
+    # bar.finish()
+    tbar.close()
+    return pixAcc, mIoU
+
+
+def validation1(model, val_loader, epoch, writer):
     # set evaluate mode
     model.eval()
 
