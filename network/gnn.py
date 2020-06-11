@@ -336,21 +336,24 @@ class Part_Graph(nn.Module):
         decomp_pu_list = self.decomp_hp(h_node_list[0], upper_parts, decomp_map_u)
         decomp_pl_list = self.decomp_hp(h_node_list[1], lower_parts, decomp_map_l)
 
-        F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(p_node_list, xp)
-
-        xpp_list_list = [[] for i in range(self.cls_p - 1)]
-        for i in range(self.edge_index_num):
-            xpp_list_list[self.edge_index[i, 1]].append(
-                self.part_dp(p_node_list[self.edge_index[i, 1]], 
-                F_dep_list[self.edge_index[i, 0]], 
-                att_list_list[self.edge_index[i, 0]][1+self.part_list_list[self.edge_index[i, 0]].index(self.edge_index[i, 1])]))
+        # F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(p_node_list, xp)
+        Fdep_att_list = []
+        # xpp_list_list = [[] for i in range(self.cls_p - 1)]
+        # for i in range(self.edge_index_num):
+        #     xpp_list_list[self.edge_index[i, 1]].append(
+        #         self.part_dp(p_node_list[self.edge_index[i, 1]], 
+        #         F_dep_list[self.edge_index[i, 0]], 
+        #         att_list_list[self.edge_index[i, 0]][1+self.part_list_list[self.edge_index[i, 0]].index(self.edge_index[i, 1])]))
         
         xp_list_new = []
         for i in range(self.cls_p - 1):
             if i + 1 in self.upper_part_list:
-                message = decomp_pu_list[self.upper_part_list.index(i + 1)] + sum(xpp_list_list[i])
+                # message = decomp_pu_list[self.upper_part_list.index(i + 1)] + sum(xpp_list_list[i])
+                message = decomp_pu_list[self.upper_part_list.index(i + 1)]
+
             elif i + 1 in self.lower_part_list:
-                message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
+                # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
+                message = decomp_pl_list[self.lower_part_list.index(i + 1)]
 
             xp_list_new.append(self.node_update_list[i](xp, p_node_list[i], message))
         return xp_list_new, decomp_map_u, decomp_map_l, Fdep_att_list
@@ -493,18 +496,38 @@ class GNN_infer(nn.Module):
 #         up_score = F.interpolate(score, (h, w), mode='bilinear', align_corners=True)
 #         new_score = self.cls_conv(torch.cat([xp, up_score], dim=1))
 #         return new_score
+# class Final_cls(nn.Module):
+#     def __init__(self, in_dim, hidden_dim, num_classes):
+#         super(Final_cls, self).__init__()
+#         self.num_classes = num_classes
+#         self.cls_conv = nn.ModuleList([nn.Sequential(
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(in_dim+hidden_dim, 1, 1, bias=True)
+#         ) for i in range(self.num_classes)])
+
+#     def forward(self, p_node_list, xl):
+#         _, _, h, w = xl.size()
+#         new_score = [self.cls_conv[i](torch.cat([F.interpolate(p_node_list[i], (h, w), mode='bilinear', align_corners=True), xl], dim=1)) for i in range(self.num_classes)]
+#         return torch.cat(new_score, dim=1)
+
 class Final_cls(nn.Module):
     def __init__(self, in_dim, hidden_dim, num_classes):
         super(Final_cls, self).__init__()
         self.num_classes = num_classes
+        self.in_dim = in_dim
+        self.hidden_dim = hidden_dim
+        self.p_conv = nn.Sequential(
+            nn.Conv2d(in_dim, hidden_dim * num_classes, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim * num_classes), nn.ReLU(inplace=False))
         self.cls_conv = nn.ModuleList([nn.Sequential(
             nn.Dropout2d(0.1),
-            nn.Conv2d(in_dim+hidden_dim, 1, 1, bias=True)
+            nn.Conv2d(hidden_dim+hidden_dim, 1, 1, bias=True)
         ) for i in range(self.num_classes)])
 
     def forward(self, p_node_list, xl):
         _, _, h, w = xl.size()
-        new_score = [self.cls_conv[i](torch.cat([F.interpolate(p_node_list[i], (h, w), mode='bilinear', align_corners=True), xl], dim=1)) for i in range(self.num_classes)]
+        p_list = list(torch.split(self.p_conv(xl), self.hidden_dim, dim=1))
+        new_score = [self.cls_conv[i](torch.cat([F.interpolate(p_node_list[i], (h, w), mode='bilinear', align_corners=True), p_list[i]], dim=1)) for i in range(self.num_classes)]
         return torch.cat(new_score, dim=1)
 
 class Decoder(nn.Module):
