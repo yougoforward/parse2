@@ -214,7 +214,6 @@ class AlphaDecoder(nn.Module):
         output = self.conv1(xfuse)
         return output
 
-
 class Full_Graph(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2):
         super(Full_Graph, self).__init__()
