@@ -407,7 +407,7 @@ class GNN_infer(nn.Module):
         #final seg
         self.final_cls = Final_cls(in_dim, self.cls_p)
 
-    def forward(self, xp, xh, xf):
+    def forward(self, xp, xh, xf, xl):
         # gnn inference at stride 8
         # feature transform
         f_node_list = list(torch.split(self.f_conv(xf), self.hidden_dim, dim=1))
@@ -491,8 +491,8 @@ class Decoder(nn.Module):
         # self.layer5 = MagicModule(2048, 512, 1)
         self.layer5 = ASPPModule(2048, 512)
         self.layer6 = DecoderModule(num_classes)
-        self.layerh = BetaHBDecoder(hbody_cls)
-        self.layerf = AlphaFBDecoder(fbody_cls)
+        self.layerh = AlphaDecoder(hbody_cls)
+        self.layerf = AlphaDecoder(fbody_cls)
         
         # adjacent matrix for pascal person 
         self.adj_matrix = torch.tensor(
@@ -509,16 +509,16 @@ class Decoder(nn.Module):
 
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
-        seg = self.layer5(x[-1])
+        context = self.layer5(x[-1])
 
         # direct infer
-        x_fea = self.layer6(seg, x[1], x[0])
-        alpha_hb_fea = self.layerh(seg, x[1])
-        alpha_fb_fea = self.layerf(seg, x[1])
+        p_fea = self.layer6(context, x[1])
+        h_fea = self.layerh(context, x[1])
+        f_fea = self.layerf(context, x[1])
 
         # gnn infer
         p_seg, h_seg, f_seg, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, \
-        Fdep_att_list= self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea)
+        Fdep_att_list= self.gnn_infer(p_fea, h_fea, f_fea, x[0])
 
         return p_seg, h_seg, f_seg, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, \
         Fdep_att_list, x_dsn
