@@ -24,9 +24,11 @@ class AAF_Loss(nn.Module):
     Loss function for multiple outputs
     """
 
-    def __init__(self, ignore_index=255, num_classes=7):
+    def __init__(self, ignore_index=255, only_present=True, num_classes=7):
         super(AAF_Loss, self).__init__()
         self.ignore_index = ignore_index
+        self.only_present = only_present
+
         self.num_classes=num_classes
         self.kld_margin=3.0
         self.kld_lambda_1=1.0
@@ -38,7 +40,6 @@ class AAF_Loss(nn.Module):
         self.w_edge_softmax = nn.Softmax(dim=-1)
         self.w_not_edge = nn.Parameter(torch.zeros(1, 1, 1, self.num_classes, 1, 3))
         self.w_not_edge_softmax = nn.Softmax(dim=-1)
-        self.ignore_index = ignore_index
 
     def forward(self, pred, targets):
         h, w = targets.size(1), targets.size(2)
@@ -82,22 +83,22 @@ class AAF_Loss(nn.Module):
                                                          w_not_edge[..., 1],
                                                          self.ignore_index)
         # Apply AAF on 7x7 patch.
-        # eloss_3, neloss_3 = lossx.adaptive_affinity_loss(targets,
-        #                                                  one_hot_lab,
-        #                                                  prob,
-        #                                                  3,
-        #                                                  self.num_classes,
-        #                                                  self.kld_margin,
-        #                                                  w_edge[..., 2],
-        #                                                  w_not_edge[..., 2],
-        #                                                  self.ignore_index)
+        eloss_3, neloss_3 = lossx.adaptive_affinity_loss(targets,
+                                                         one_hot_lab,
+                                                         prob,
+                                                         3,
+                                                         self.num_classes,
+                                                         self.kld_margin,
+                                                         w_edge[..., 2],
+                                                         w_not_edge[..., 2],
+                                                         self.ignore_index)
         dec = self.dec
         aaf_loss = torch.mean(eloss_1) * self.kld_lambda_1*dec
         aaf_loss += torch.mean(eloss_2) * self.kld_lambda_1*dec
-        # aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1*dec
+        aaf_loss += torch.mean(eloss_3) * self.kld_lambda_1*dec
         aaf_loss += torch.mean(neloss_1) * self.kld_lambda_2*dec
         aaf_loss += torch.mean(neloss_2) * self.kld_lambda_2*dec
-        # aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2*dec
+        aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2*dec
 
         return aaf_loss
 
