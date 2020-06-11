@@ -437,7 +437,7 @@ class GNN_infer(nn.Module):
 
         # gnn infer
         for iter in range(2):
-            p_node_list_new, h_node_list_new, f_node_new, decomp_map_f_new, decomp_map_u_new, decomp_map_l_new, comp_map_f_new, comp_map_u_new, comp_map_l_new, Fdep_att_list_new = self.gnn[iter](p_node_list_iter[iter], h_node_list_iter[iter], f_node_list_iter[iter], xp, xh, xf)
+            p_node_list_new, h_node_list_new, f_node_new, decomp_map_f_new, decomp_map_u_new, decomp_map_l_new, comp_map_f_new, comp_map_u_new, comp_map_l_new, Fdep_att_list_new = self.gnn(p_node_list_iter[iter], h_node_list_iter[iter], f_node_list_iter[iter], xp, xh, xf)
 
             # node supervision new
             f_seg_new = self.f_seg(torch.cat([f_node_list[0], f_node_new], dim=1))
