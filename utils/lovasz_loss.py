@@ -269,7 +269,7 @@ class lov_AAF_Loss(nn.Module):
         pred = F.interpolate(input=preds[0], size=(h, w), mode='bilinear', align_corners=True)
 
         #ce loss
-        # loss_ce = self.criterion(pred, targets[0])
+        loss_ce = self.criterion(pred, targets[0])
 
         pred = F.softmax(input=pred, dim=1)
         loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
