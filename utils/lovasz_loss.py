@@ -269,7 +269,7 @@ class lov_AAF_Loss(nn.Module):
         pred = F.interpolate(input=preds[0], size=(h, w), mode='bilinear', align_corners=True)
 
         #ce loss
-        # loss_ce = self.criterion(pred, targets[0])
+        loss_ce = self.criterion(pred, targets[0])
 
         pred = F.softmax(input=pred, dim=1)
         loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
@@ -345,7 +345,9 @@ class lov_AAF_Loss(nn.Module):
         aaf_loss += torch.mean(neloss_3) * self.kld_lambda_2 * dec
 
         # return torch.stack([loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn, aaf_loss], dim=0)
-        return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + aaf_loss
+        # return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + aaf_loss
+        return loss + 0.4 * loss_hb + 0.4 * loss_fb + 0.4 * loss_dsn + aaf_loss + loss_ce
+
 
 class LovaszSoftmaxLoss(nn.Module):
     """Lovasz loss for Deep Supervision"""
