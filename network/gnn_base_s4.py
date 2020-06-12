@@ -352,9 +352,8 @@ class Part_Graph(nn.Module):
                 message = decomp_pu_list[self.upper_part_list.index(i + 1)]
 
             elif i + 1 in self.lower_part_list:
-                # message = decomp_pu_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
-                message = decomp_pu_list[self.lower_part_list.index(i + 1)]
-
+                # message = decomp_pl_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
+                message = decomp_pl_list[self.lower_part_list.index(i + 1)]
 
             xp_list_new.append(self.node_update_list[i](xp, p_node_list[i], message))
         return xp_list_new, decomp_map_u, decomp_map_l, Fdep_att_list
@@ -412,10 +411,6 @@ class GNN_infer(nn.Module):
             nn.Conv2d(in_dim, hidden_dim * cls_f, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * cls_f), nn.ReLU(inplace=False))
 
-        # gnn infer
-        self.gnn = GNN(adj_matrix, upper_half_node, lower_half_node, self.in_dim, self.hidden_dim, self.cls_p,
-                       self.cls_h, self.cls_f)
-
         # node supervision
         # multi-label classifier
         self.f_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
@@ -434,16 +429,91 @@ class GNN_infer(nn.Module):
         h_seg = self.h_seg(torch.cat(h_node_list, dim=1))
         p_seg = self.p_seg(torch.cat(p_node_list, dim=1))
 
-        # gnn infer
-        p_node_list_new, h_node_list_new, f_node_new, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list = self.gnn(p_node_list[1:], h_node_list[1:], f_node_list[1], xp, xh, xf)
+        #final readout
+        p_seg_final = self.final_cls(p_node_list, xl)
+        return [p_seg, p_seg_final], [h_seg], [f_seg], [], [], [
+            ], [], [], [], []
 
-        # node supervision new
-        f_seg_new = self.f_seg(torch.cat([f_node_list[0], f_node_new], dim=1))
-        h_seg_new = self.h_seg(torch.cat([h_node_list[0]]+h_node_list_new, dim=1))
-        p_seg_new = self.p_seg(torch.cat([p_node_list[0]]+p_node_list_new, dim=1))
 
-        return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_map_f], [decomp_map_u], [
-            decomp_map_l], [comp_map_f], [comp_map_u], [comp_map_l], [Fdep_att_list]
+# class Final_cls(nn.Module):
+#     def __init__(self, in_dim=256, num_classes=7):
+#         super(Final_cls, self).__init__()
+
+#         self.query_conv = nn.Conv1d(in_dim, in_dim//4, kernel_size=1)
+#         self.key_conv = nn.Conv2d(in_dim, in_dim//4, kernel_size=1)
+#         self.cls_conv = nn.Sequential(
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(in_dim+in_dim, num_classes, kernel_size=1, padding=0, bias=True)
+#         )
+
+#     def forward(self, p_seg, p_fea):
+#         # n, c, h, w = p_seg.size()
+#         n, _, h, w = p_fea.size()
+#         p_seg = F.interpolate(p_seg, (h, w), mode='bilinear', align_corners=True)
+        
+#         p_att = torch.softmax(p_seg, dim=1).view(n, -1, h*w).permute(0,2,1) # n, h*w, c
+#         p_center = torch.bmm(p_fea.view(n, -1, h*w),p_att)/torch.sum(p_att, dim=1, keepdim=True) #n, C, c
+
+#         query = self.query_conv(p_center) # n, C', c
+#         key = self.key_conv(p_fea).view(n, -1, h*w) # n, C', h*w
+        
+#         energy = torch.bmm(query.permute(0,2,1), key) #n, c, h*w
+#         attention = torch.softmax(energy, dim=1)
+#         new_fea = torch.bmm(p_center, attention).view(n, -1, h, w) #n, C, h*w
+#         new_seg = self.cls_conv(torch.cat([p_fea, new_fea], dim=1))
+#         return new_seg
+
+# class Final_cls(nn.Module):
+#     def __init__(self, in_dim, num_classes):
+#         super(Final_cls, self).__init__()
+
+#         self.cls_conv = nn.Sequential(
+#             nn.Conv2d(in_dim+num_classes, in_dim, kernel_size=3, padding=1, bias=False), 
+#             BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+#             nn.Conv2d(in_dim, in_dim, kernel_size=1, padding=0, bias=False), 
+#             BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(in_dim, num_classes, kernel_size=1, padding=0, bias=True)
+#         )
+
+#     def forward(self, xp, score):
+#         _, _, h, w = xp.size()
+#         up_score = F.interpolate(score, (h, w), mode='bilinear', align_corners=True)
+#         new_score = self.cls_conv(torch.cat([xp, up_score], dim=1))
+#         return new_score
+# class Final_cls(nn.Module):
+#     def __init__(self, in_dim, hidden_dim, num_classes):
+#         super(Final_cls, self).__init__()
+#         self.num_classes = num_classes
+#         self.cls_conv = nn.ModuleList([nn.Sequential(
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(in_dim+hidden_dim, 1, 1, bias=True)
+#         ) for i in range(self.num_classes)])
+
+#     def forward(self, p_node_list, xl):
+#         _, _, h, w = xl.size()
+#         new_score = [self.cls_conv[i](torch.cat([F.interpolate(p_node_list[i], (h, w), mode='bilinear', align_corners=True), xl], dim=1)) for i in range(self.num_classes)]
+#         return torch.cat(new_score, dim=1)
+
+class Final_cls(nn.Module):
+    def __init__(self, in_dim, hidden_dim, num_classes):
+        super(Final_cls, self).__init__()
+        self.num_classes = num_classes
+        self.in_dim = in_dim
+        self.hidden_dim = hidden_dim
+        self.p_conv = nn.Sequential(
+            nn.Conv2d(in_dim, hidden_dim * num_classes, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim * num_classes), nn.ReLU(inplace=False))
+        self.cls_conv = nn.ModuleList([nn.Sequential(
+            nn.Dropout2d(0.1),
+            nn.Conv2d(hidden_dim+hidden_dim, 1, 1, bias=True)
+        ) for i in range(self.num_classes)])
+
+    def forward(self, p_node_list, xl):
+        _, _, h, w = xl.size()
+        p_list = list(torch.split(self.p_conv(xl), self.hidden_dim, dim=1))
+        new_score = [self.cls_conv[i](torch.cat([F.interpolate(p_node_list[i], (h, w), mode='bilinear', align_corners=True), p_list[i]], dim=1)) for i in range(self.num_classes)]
+        return torch.cat(new_score, dim=1)
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
