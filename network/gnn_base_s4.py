@@ -416,7 +416,9 @@ class GNN_infer(nn.Module):
         self.f_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
         self.h_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
         self.p_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
-
+        
+        #final seg
+        self.final_cls = Final_cls(in_dim, hidden_dim, self.cls_p)
     def forward(self, xp, xh, xf, xl):
         # gnn inference at stride 8
         # feature transform
