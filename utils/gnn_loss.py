@@ -7,6 +7,96 @@ from torch.autograd import Variable
 
 from torch.nn import BCELoss
 import utils.aaf.losses as lossx
+class gnn_loss_noatt(nn.Module):
+    """Lovasz loss for Alpha process"""
+
+    def __init__(self, adj_matrix, ignore_index=None, only_present=True, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], cls_p=7, cls_h=3, cls_f=2):
+        super(gnn_loss_noatt, self).__init__()
+        self.edge_index = torch.nonzero(adj_matrix)
+        self.edge_index_num = self.edge_index.shape[0]
+        self.part_list_list = [[] for i in range(cls_p - 1)]
+        for i in range(self.edge_index_num):
+            self.part_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
+
+        self.ignore_index = ignore_index
+        self.only_present = only_present
+        self.weight = torch.FloatTensor([0.82877791, 0.95688253, 0.94921949, 1.00538108, 1.0201687,  1.01665831, 1.05470914])
+        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
+        self.criterion2 = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=None)
+
+        self.upper_part_list = upper_part_list
+        self.lower_part_list = lower_part_list
+        self.num_classes = cls_p
+        self.cls_h = cls_h
+        self.cls_f = cls_f
+        self.bceloss = torch.nn.BCELoss(reduction='none')
+        self.aaf_loss = AAF_Loss(ignore_index, cls_p)
+
+    def forward(self, preds, targets):
+        h, w = targets[0].size(1), targets[0].size(2)
+        # seg loss
+        loss=[]
+        for i in range(len(preds[0])-1):
+            pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss.append(self.criterion(pred, targets[0]))
+            pred = F.softmax(input=pred, dim=1)
+            loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
+        loss = sum(loss)
+
+        #part seg loss final
+        pred0 = F.interpolate(input=preds[0][-1], size=(h, w), mode='bilinear', align_corners=True)
+        pred = F.softmax(input=pred0, dim=1)
+        #lovasz loss
+        lovasz_loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
+        # #aaf loss
+        # aaf_loss = self.aaf_loss(pred, targets[0])
+        #ce loss
+        loss_ce = self.criterion(pred0, targets[0])
+
+        # loss = loss + lovasz_loss + aaf_loss + loss_ce
+        loss = loss + lovasz_loss + loss_ce
+
+        # half body
+        loss_hb = []
+        for i in range(len(preds[1])-1):
+            pred_hb = F.interpolate(input=preds[1][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss_hb.append(self.criterion2(pred_hb, targets[1].long()))
+
+            pred_hb = F.softmax(input=pred_hb, dim=1)
+            loss_hb.append(lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
+                                      only_present=self.only_present))
+        loss_hb = sum(loss_hb)
+        #half seg loss final
+        pred_hb = F.interpolate(input=preds[1][-1], size=(h, w), mode='bilinear', align_corners=True)
+        pred_hb = F.softmax(input=pred_hb, dim=1)
+        loss_hb += lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
+                                      only_present=self.only_present)
+
+
+        # full body
+        loss_fb = []
+        for i in range(len(preds[2])):
+            pred_fb = F.interpolate(input=preds[2][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss_fb.append(self.criterion2(pred_fb, targets[2].long()))
+
+            pred_fb = F.softmax(input=pred_fb, dim=1)
+            loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
+                                      only_present=self.only_present))
+        loss_fb = sum(loss_fb)
+        #full seg loss final
+        pred_fb = F.interpolate(input=preds[2][-1], size=(h, w), mode='bilinear', align_corners=True)
+        pred_fb = F.softmax(input=pred_fb, dim=1)
+        loss_fb += lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
+                                      only_present=self.only_present)
+
+        
+        # dsn loss
+        pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
+        loss_dsn = self.criterion(pred_dsn, targets[0])
+        # return 0.33*loss + 0.5*(0.4 * loss_hb + 0.4 * loss_fb) + \
+        #        0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att + loss_dp_att) + 0.4 * loss_dsn
+        return (loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
+
 class gnn_loss(nn.Module):
     """Lovasz loss for Alpha process"""
 
@@ -215,6 +305,96 @@ class gnn_loss(nn.Module):
         # return 0.33*loss + 0.5*(0.4 * loss_hb + 0.4 * loss_fb) + \
         #        0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att + loss_dp_att) + 0.4 * loss_dsn
         return (loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
+        return (loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn + 0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att)
+class gnn_s4_loss_noatt(nn.Module):
+    """Lovasz loss for Alpha process"""
+
+    def __init__(self, adj_matrix, ignore_index=None, only_present=True, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], cls_p=7, cls_h=3, cls_f=2):
+        super(gnn_s4_loss_noatt, self).__init__()
+        self.edge_index = torch.nonzero(adj_matrix)
+        self.edge_index_num = self.edge_index.shape[0]
+        self.part_list_list = [[] for i in range(cls_p - 1)]
+        for i in range(self.edge_index_num):
+            self.part_list_list[self.edge_index[i, 1]].append(self.edge_index[i, 0])
+
+        self.ignore_index = ignore_index
+        self.only_present = only_present
+        self.weight = torch.FloatTensor([0.82877791, 0.95688253, 0.94921949, 1.00538108, 1.0201687,  1.01665831, 1.05470914])
+        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
+        self.criterion2 = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=None)
+
+        self.upper_part_list = upper_part_list
+        self.lower_part_list = lower_part_list
+        self.num_classes = cls_p
+        self.cls_h = cls_h
+        self.cls_f = cls_f
+        self.bceloss = torch.nn.BCELoss(reduction='none')
+        self.aaf_loss = AAF_Loss(ignore_index, cls_p)
+
+    def forward(self, preds, targets):
+        h, w = targets[0].size(1), targets[0].size(2)
+        # seg loss
+        loss=[]
+        for i in range(len(preds[0])-1):
+            pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss.append(self.criterion(pred, targets[0]))
+            pred = F.softmax(input=pred, dim=1)
+            loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
+        loss = sum(loss)
+
+        #part seg loss final
+        pred0 = F.interpolate(input=preds[0][-1], size=(h, w), mode='bilinear', align_corners=True)
+        pred = F.softmax(input=pred0, dim=1)
+        #lovasz loss
+        lovasz_loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
+        # #aaf loss
+        # aaf_loss = self.aaf_loss(pred, targets[0])
+        #ce loss
+        loss_ce = self.criterion(pred0, targets[0])
+
+        # loss = loss + lovasz_loss + aaf_loss + loss_ce
+        loss_final = lovasz_loss + loss_ce
+
+        # half body
+        loss_hb = []
+        for i in range(len(preds[1])-1):
+            pred_hb = F.interpolate(input=preds[1][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss_hb.append(self.criterion2(pred_hb, targets[1].long()))
+
+            pred_hb = F.softmax(input=pred_hb, dim=1)
+            loss_hb.append(lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
+                                      only_present=self.only_present))
+        loss_hb = sum(loss_hb)
+        #half seg loss final
+        pred_hb = F.interpolate(input=preds[1][-1], size=(h, w), mode='bilinear', align_corners=True)
+        pred_hb = F.softmax(input=pred_hb, dim=1)
+        loss_hb += lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
+                                      only_present=self.only_present)
+
+
+        # full body
+        loss_fb = []
+        for i in range(len(preds[2])):
+            pred_fb = F.interpolate(input=preds[2][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss_fb.append(self.criterion2(pred_fb, targets[2].long()))
+
+            pred_fb = F.softmax(input=pred_fb, dim=1)
+            loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
+                                      only_present=self.only_present))
+        loss_fb = sum(loss_fb)
+        #full seg loss final
+        pred_fb = F.interpolate(input=preds[2][-1], size=(h, w), mode='bilinear', align_corners=True)
+        pred_fb = F.softmax(input=pred_fb, dim=1)
+        loss_fb += lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
+                                      only_present=self.only_present)
+
+        
+        # dsn loss
+        pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
+        loss_dsn = self.criterion(pred_dsn, targets[0])
+        # return 0.33*loss + 0.5*(0.4 * loss_hb + 0.4 * loss_fb) + \
+        #        0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att + loss_dp_att) + 0.4 * loss_dsn
+        return loss_final + (loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
 
 class gnn_s4_loss(nn.Module):
     """Lovasz loss for Alpha process"""
@@ -424,6 +604,7 @@ class gnn_s4_loss(nn.Module):
         # return 0.33*loss + 0.5*(0.4 * loss_hb + 0.4 * loss_fb) + \
         #        0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att + loss_dp_att) + 0.4 * loss_dsn
         return loss_final + (loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
+        return loss_final + (loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn + 0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att)
 
 class gnn_loss2(nn.Module):
     """Lovasz loss for Alpha process"""
