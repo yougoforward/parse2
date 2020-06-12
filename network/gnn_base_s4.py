@@ -416,7 +416,7 @@ class GNN_infer(nn.Module):
         self.f_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
         self.h_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
         self.p_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
-        
+
         #final seg
         self.final_cls = Final_cls(in_dim, hidden_dim, self.cls_p)
     def forward(self, xp, xh, xf, xl):
@@ -507,8 +507,10 @@ class Final_cls(nn.Module):
             nn.Conv2d(in_dim, hidden_dim * num_classes, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * num_classes), nn.ReLU(inplace=False))
         self.cls_conv = nn.ModuleList([nn.Sequential(
+            nn.Conv2d(hidden_dim*2, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim ), nn.ReLU(inplace=False),
             nn.Dropout2d(0.1),
-            nn.Conv2d(hidden_dim+hidden_dim, 1, 1, bias=True)
+            nn.Conv2d(hidden_dim, 1, 1, bias=True)
         ) for i in range(self.num_classes)])
 
     def forward(self, p_node_list, xl):
