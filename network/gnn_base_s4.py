@@ -203,12 +203,12 @@ class DecoderModule(nn.Module):
         xt = self.conv0(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
         _, _, th, tw = xl.size()
         xt_fea = self.conv1(xt)
-        xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
+        # xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
         xl = self.conv2(xl)
-        x = torch.cat([xt, xl], dim=1)
-        x_fea = self.conv3(x)
+        # x = torch.cat([xt, xl], dim=1)
+        # x_fea = self.conv3(x)
         # x_seg = self.conv4(x_fea)
-        return x_fea, xt_fea
+        return xl, xt_fea
 
 class AlphaDecoder(nn.Module):
     def __init__(self, hbody_cls):
@@ -418,7 +418,7 @@ class GNN_infer(nn.Module):
         self.p_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
 
         #final seg
-        self.final_cls = Final_cls(in_dim, hidden_dim, self.cls_p)
+        self.final_cls = Final_cls(48, hidden_dim, self.cls_p)
     def forward(self, xp, xh, xf, xl):
         # gnn inference at stride 8
         # feature transform
@@ -501,23 +501,39 @@ class Final_cls(nn.Module):
     def __init__(self, in_dim, hidden_dim, num_classes):
         super(Final_cls, self).__init__()
         self.num_classes = num_classes
-        self.in_dim = in_dim
-        self.hidden_dim = hidden_dim
-        self.p_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * num_classes, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim * num_classes), nn.ReLU(inplace=False))
         self.cls_conv = nn.ModuleList([nn.Sequential(
-            nn.Conv2d(hidden_dim*2, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim ), nn.ReLU(inplace=False),
+            nn.Conv2d(in_dim+hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
             nn.Dropout2d(0.1),
             nn.Conv2d(hidden_dim, 1, 1, bias=True)
         ) for i in range(self.num_classes)])
 
     def forward(self, p_node_list, xl):
         _, _, h, w = xl.size()
-        p_list = list(torch.split(self.p_conv(xl), self.hidden_dim, dim=1))
-        new_score = [self.cls_conv[i](torch.cat([F.interpolate(p_node_list[i], (h, w), mode='bilinear', align_corners=True), p_list[i]], dim=1)) for i in range(self.num_classes)]
+        new_score = [self.cls_conv[i](torch.cat([F.interpolate(p_node_list[i], (h, w), mode='bilinear', align_corners=True), xl], dim=1)) for i in range(self.num_classes)]
         return torch.cat(new_score, dim=1)
+
+# class Final_cls(nn.Module):
+#     def __init__(self, in_dim, hidden_dim, num_classes):
+#         super(Final_cls, self).__init__()
+#         self.num_classes = num_classes
+#         self.in_dim = in_dim
+#         self.hidden_dim = hidden_dim
+#         self.p_conv = nn.Sequential(
+#             nn.Conv2d(in_dim, hidden_dim * num_classes, kernel_size=1, padding=0, stride=1, bias=False),
+#             BatchNorm2d(hidden_dim * num_classes), nn.ReLU(inplace=False))
+#         self.cls_conv = nn.ModuleList([nn.Sequential(
+#             nn.Conv2d(hidden_dim*2, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+#             BatchNorm2d(hidden_dim ), nn.ReLU(inplace=False),
+#             nn.Dropout2d(0.1),
+#             nn.Conv2d(hidden_dim, 1, 1, bias=True)
+#         ) for i in range(self.num_classes)])
+
+#     def forward(self, p_node_list, xl):
+#         _, _, h, w = xl.size()
+#         p_list = list(torch.split(self.p_conv(xl), self.hidden_dim, dim=1))
+#         new_score = [self.cls_conv[i](torch.cat([F.interpolate(p_node_list[i], (h, w), mode='bilinear', align_corners=True), p_list[i]], dim=1)) for i in range(self.num_classes)]
+#         return torch.cat(new_score, dim=1)
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
