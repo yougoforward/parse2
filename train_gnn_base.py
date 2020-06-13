@@ -17,7 +17,7 @@ from dataset.data_pascal import DataGenerator
 from network.gnn_base import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
-from utils.gnn_loss import gnn_loss as ABRLovaszLoss
+from utils.gnn_loss import gnn_loss_noatt as ABRLovaszLoss
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions

@@ -107,7 +107,7 @@ def main(args):
 
     # define dataloader
     train_loader = data.DataLoader(DataGenerator(root=args.root, list_path=args.lst,
-                                                    crop_size=args.crop_size, training=True),
+                                                    crop_size=args.crop_size, training=True), drop_last=True,
                                    batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=False)
     val_loader = data.DataLoader(DataGenerator(root=args.val_root, list_path=args.val_lst,
                                                   crop_size=args.crop_size, training=False),
