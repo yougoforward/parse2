@@ -229,19 +229,19 @@ def validation(model, val_loader, epoch, writer):
             preds = F.interpolate(input=outputs[0][-1], size=(h, w), mode='bilinear', align_corners=True)
             preds_hb = F.interpolate(input=outputs[1][-1], size=(h, w), mode='bilinear', align_corners=True)
             preds_fb = F.interpolate(input=outputs[2][-1], size=(h, w), mode='bilinear', align_corners=True)
-            if idx % 50 == 0:
-                img_vis = inv_preprocess(image, num_images=args.save_num)
-                label_vis = decode_predictions(target.int(), num_images=args.save_num, num_classes=args.num_classes)
-                pred_vis = decode_predictions(torch.argmax(preds, dim=1), num_images=args.save_num,
-                                              num_classes=args.num_classes)
+            # if idx % 50 == 0:
+            #     img_vis = inv_preprocess(image, num_images=args.save_num)
+            #     label_vis = decode_predictions(target.int(), num_images=args.save_num, num_classes=args.num_classes)
+            #     pred_vis = decode_predictions(torch.argmax(preds, dim=1), num_images=args.save_num,
+            #                                   num_classes=args.num_classes)
 
-                # visual grids
-                img_grid = torchvision.utils.make_grid(torch.from_numpy(img_vis.transpose(0, 3, 1, 2)))
-                label_grid = torchvision.utils.make_grid(torch.from_numpy(label_vis.transpose(0, 3, 1, 2)))
-                pred_grid = torchvision.utils.make_grid(torch.from_numpy(pred_vis.transpose(0, 3, 1, 2)))
-                writer.add_image('val_images', img_grid, epoch * len(val_loader) + idx + 1)
-                writer.add_image('val_labels', label_grid, epoch * len(val_loader) + idx + 1)
-                writer.add_image('val_preds', pred_grid, epoch * len(val_loader) + idx + 1)
+            #     # visual grids
+            #     img_grid = torchvision.utils.make_grid(torch.from_numpy(img_vis.transpose(0, 3, 1, 2)))
+            #     label_grid = torchvision.utils.make_grid(torch.from_numpy(label_vis.transpose(0, 3, 1, 2)))
+            #     pred_grid = torchvision.utils.make_grid(torch.from_numpy(pred_vis.transpose(0, 3, 1, 2)))
+            #     writer.add_image('val_images', img_grid, epoch * len(val_loader) + idx + 1)
+            #     writer.add_image('val_labels', label_grid, epoch * len(val_loader) + idx + 1)
+            #     writer.add_image('val_preds', pred_grid, epoch * len(val_loader) + idx + 1)
 
             # pixelAcc
             correct, labeled = batch_pix_accuracy(preds.data, target)
