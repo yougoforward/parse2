@@ -502,8 +502,8 @@ class Final_cls(nn.Module):
         super(Final_cls, self).__init__()
         self.num_classes = num_classes
         self.cls_conv = nn.ModuleList([nn.Sequential(
-            nn.Conv2d(in_dim+hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(in_dim+hidden_dim, 256, kernel_size=3, padding=1, stride=1, bias=False), BatchNorm2d(256), nn.ReLU(inplace=False),
+            nn.Conv2d(256, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False), BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
             nn.Dropout2d(0.1),
             nn.Conv2d(hidden_dim, 1, 1, bias=True)
         ) for i in range(self.num_classes)])
