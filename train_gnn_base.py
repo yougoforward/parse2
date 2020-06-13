@@ -14,7 +14,7 @@ from torch.utils import data
 
 from dataset.data_pascal import DataGenerator
 # from dataset.datasets import DatasetGenerator
-from network.gnn_base import get_model
+from network.gnn_base_s8 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 from utils.gnn_loss import gnn_loss_noatt as ABRLovaszLoss

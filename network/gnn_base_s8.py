@@ -100,8 +100,8 @@ class GNN_infer(nn.Module):
         # feature transform
         f_node_list = list(torch.split(self.f_conv(xf), self.hidden_dim, dim=1))
         h_node_list = list(torch.split(self.h_conv(xh), self.hidden_dim, dim=1))
-        p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
-        p_node_list = [F.interpolate(p_node_list[i], (h,w), mode='bilinear', align_corners=True) for i in range(len(p_node_list))]
+        p_node_list_s4 = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
+        p_node_list = [F.interpolate(p_node_list_s4[i], (h,w), mode='bilinear', align_corners=True) for i in range(len(p_node_list_s4))]
 
         # node supervision
         f_seg = self.f_seg(torch.cat(f_node_list, dim=1))
