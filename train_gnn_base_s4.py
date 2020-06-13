@@ -17,7 +17,7 @@ from dataset.data_pascal import DataGenerator
 from network.gnn_base_s4 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
-from utils.gnn_loss import gnn_s4_loss_noatt as ABRLovaszLoss
+from utils.gnn_loss import gnn_loss_noatt as ABRLovaszLoss
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
 from utils.visualize import inv_preprocess, decode_predictions
@@ -133,7 +133,7 @@ def main(args):
 
         # validation
         if epoch %10 ==0 or epoch > args.epochs-10:
-            val_pixacc0, val_miou0 = validation0(model, val_loader, epoch, writer)
+            # val_pixacc0, val_miou0 = validation0(model, val_loader, epoch, writer)
             # val_pixacc1, val_miou1 = validation1(model, val_loader, epoch, writer)
 
             val_pixacc, val_miou = validation(model, val_loader, epoch, writer)

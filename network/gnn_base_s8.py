@@ -92,13 +92,10 @@ class GNN_infer(nn.Module):
         self.f_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
         self.h_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
         self.p_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
-        self.f_seg_final = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(2*hidden_dim * cls_f, cls_f, 1, groups=cls_f))
-        self.h_seg_final = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(2*hidden_dim * cls_h, cls_h, 1, groups=cls_h))
-        self.p_seg_final = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(2*hidden_dim * cls_p, cls_p, 1, groups=cls_p))
+
 
     def forward(self, xp, xh, xf):
         # gnn inference at stride 8
-        _,_,hl,wl = xp.size()
         _,_,h,w = xh.size()
         # feature transform
         f_node_list = list(torch.split(self.f_conv(xf), self.hidden_dim, dim=1))
@@ -107,20 +104,11 @@ class GNN_infer(nn.Module):
         p_node_list = [F.interpolate(p_node_list_s4[i], (h,w), mode='bilinear', align_corners=True) for i in range(len(p_node_list_s4))]
 
         # node supervision
-        # f_seg = self.f_seg(torch.cat(f_node_list, dim=1))
-        # h_seg = self.h_seg(torch.cat(h_node_list, dim=1))
-        # p_seg = self.p_seg(torch.cat(p_node_list, dim=1))
+        f_seg = self.f_seg(torch.cat(f_node_list, dim=1))
+        h_seg = self.h_seg(torch.cat(h_node_list, dim=1))
+        p_seg = self.p_seg(torch.cat(p_node_list, dim=1))
 
-        f_node_list_final = [torch.cat([f_node_list[i], f_node_list[i]], dim=1) for i in range(len(f_node_list))]
-        h_node_list_final = [torch.cat([h_node_list[i], h_node_list[i]], dim=1) for i in range(len(h_node_list))]
-        p_node_list_final = [torch.cat([p_node_list_s4[i], F.interpolate(p_node_list[i], (hl,wl), mode='bilinear', align_corners=True)], dim=1) for i in range(len(p_node_list))]
-        
-        f_seg_final = self.f_seg_final(torch.cat(f_node_list_final, dim=1))
-        h_seg_final = self.h_seg_final(torch.cat(h_node_list_final, dim=1))
-        p_seg_final = self.p_seg_final(torch.cat(p_node_list_final, dim=1))
-
-
-        return [p_seg_final], [h_seg_final], [f_seg_final], [], [], [
+        return [p_seg], [h_seg], [f_seg], [], [], [
             ], [], [], [], []
 
 
