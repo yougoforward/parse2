@@ -93,12 +93,15 @@ class GNN_infer(nn.Module):
         self.h_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
         self.p_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
 
+
     def forward(self, xp, xh, xf):
         # gnn inference at stride 8
+        _,_,h,w = xh.size()
         # feature transform
         f_node_list = list(torch.split(self.f_conv(xf), self.hidden_dim, dim=1))
-        p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
         h_node_list = list(torch.split(self.h_conv(xh), self.hidden_dim, dim=1))
+        p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
+        p_node_list = [F.interpolate(p_node_list[i], (h,w), mode='bilinear', align_corners=True) for i in range(len(p_node_list))]
 
         # node supervision
         f_seg = self.f_seg(torch.cat(f_node_list, dim=1))
