@@ -38,12 +38,12 @@ class DecoderModule(nn.Module):
         xt = self.conv0(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
         _, _, th, tw = xl.size()
         xt_fea = self.conv1(xt)
-        xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
-        xl = self.conv2(xl)
-        x = torch.cat([xt, xl], dim=1)
-        x_fea = self.conv3(x)
-        # x_seg = self.conv4(x_fea)
-        return x_fea
+        # xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
+        # xl = self.conv2(xl)
+        # x = torch.cat([xt, xl], dim=1)
+        # x_fea = self.conv3(x)
+        # # x_seg = self.conv4(x_fea)
+        return xt_fea
 
 class AlphaDecoder(nn.Module):
     def __init__(self, hbody_cls):
@@ -105,7 +105,7 @@ class GNN_infer(nn.Module):
         # feature transform
         f_node_list = list(torch.split(self.f_conv(xf), self.hidden_dim, dim=1))
         h_node_list = list(torch.split(self.h_conv(xh), self.hidden_dim, dim=1))
-        p_node_list = list(torch.split(self.p_conv(self.down_conv(xp)), self.hidden_dim, dim=1))
+        p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
         # p_node_list_s4 = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
         # p_node_list = [F.interpolate(p_node_list_s4[i], (h,w), mode='bilinear', align_corners=True) for i in range(len(p_node_list_s4))]
 
