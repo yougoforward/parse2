@@ -7,7 +7,7 @@ from torch.autograd import Variable
 
 from torch.nn import BCELoss
 import utils.aaf.losses as lossx
-class gnn_loss_noatt(nn.Module):
+给i他class gnn_loss_noatt(nn.Module):
     """Lovasz loss for Alpha process"""
 
     def __init__(self, adj_matrix, ignore_index=None, only_present=True, upper_part_list=[1, 2, 3, 4], lower_part_list=[5, 6], cls_p=7, cls_h=3, cls_f=2):

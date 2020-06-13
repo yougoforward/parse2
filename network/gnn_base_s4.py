@@ -98,6 +98,10 @@ class GNN_infer(nn.Module):
         self.f_seg_final = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
         self.h_seg_final = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
         self.p_seg_final = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
+        #down sample
+        self.down_conv = nn.Sequential(
+            nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, stride=2, bias=False),
+            BatchNorm2d(in_dim), nn.ReLU(inplace=False))
 
     def forward(self, xp, xh, xf):
         # gnn inference at stride 8
