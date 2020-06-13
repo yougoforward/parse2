@@ -77,6 +77,9 @@ class GNN_infer(nn.Module):
         self.hidden_dim = hidden_dim
 
         # node feature transform 
+        self.p4_conv = nn.Sequential(
+            nn.Conv2d(in_dim, hidden_dim * cls_p, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim * cls_p), nn.ReLU(inplace=False))
         self.p_conv = nn.Sequential(
             nn.Conv2d(in_dim, hidden_dim * cls_p, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim * cls_p), nn.ReLU(inplace=False))
@@ -88,13 +91,13 @@ class GNN_infer(nn.Module):
             BatchNorm2d(hidden_dim * cls_f), nn.ReLU(inplace=False))
 
         # node supervision
-        # multi-label classifier
-        self.f_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
-        self.h_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
-        self.p_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
-        self.f_seg_final = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(2*hidden_dim * cls_f, cls_f, 1, groups=cls_f))
-        self.h_seg_final = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(2*hidden_dim * cls_h, cls_h, 1, groups=cls_h))
-        self.p_seg_final = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(2*hidden_dim * cls_p, cls_p, 1, groups=cls_p))
+        # # multi-label classifier
+        # self.f_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
+        # self.h_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
+        # self.p_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
+        self.f_seg_final = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
+        self.h_seg_final = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
+        self.p_seg_final = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
 
     def forward(self, xp, xh, xf):
         # gnn inference at stride 8
@@ -103,17 +106,18 @@ class GNN_infer(nn.Module):
         # feature transform
         f_node_list = list(torch.split(self.f_conv(xf), self.hidden_dim, dim=1))
         h_node_list = list(torch.split(self.h_conv(xh), self.hidden_dim, dim=1))
-        p_node_list_s4 = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
-        p_node_list = [F.interpolate(p_node_list_s4[i], (h,w), mode='bilinear', align_corners=True) for i in range(len(p_node_list_s4))]
+        p_node_list_s4 = list(torch.split(self.p4_conv(xp), self.hidden_dim, dim=1))
+        p_node_list = list(torch.split(self.p_conv(self.down_conv(xp)), self.hidden_dim, dim=1))
+        # p_node_list = [F.interpolate(p_node_list_s4[i], (h,w), mode='bilinear', align_corners=True) for i in range(len(p_node_list_s4))]
 
         # node supervision
         # f_seg = self.f_seg(torch.cat(f_node_list, dim=1))
         # h_seg = self.h_seg(torch.cat(h_node_list, dim=1))
         # p_seg = self.p_seg(torch.cat(p_node_list, dim=1))
 
-        f_node_list_final = [torch.cat([f_node_list[i], f_node_list[i]], dim=1) for i in range(len(f_node_list))]
-        h_node_list_final = [torch.cat([h_node_list[i], h_node_list[i]], dim=1) for i in range(len(h_node_list))]
-        p_node_list_final = [torch.cat([p_node_list_s4[i], F.interpolate(p_node_list[i], (hl,wl), mode='bilinear', align_corners=True)], dim=1) for i in range(len(p_node_list))]
+        f_node_list_final = [f_node_list[i] + f_node_list[i] for i in range(len(f_node_list))]
+        h_node_list_final = [h_node_list[i] + h_node_list[i] for i in range(len(h_node_list))]
+        p_node_list_final = [p_node_list_s4[i]+F.interpolate(p_node_list[i], (hl,wl), mode='bilinear', align_corners=True) for i in range(len(p_node_list))]
         
         f_seg_final = self.f_seg_final(torch.cat(f_node_list_final, dim=1))
         h_seg_final = self.h_seg_final(torch.cat(h_node_list_final, dim=1))
