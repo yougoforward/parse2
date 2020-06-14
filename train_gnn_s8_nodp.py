@@ -231,19 +231,6 @@ def validation(model, val_loader, epoch, writer):
             preds = F.interpolate(input=outputs[0][-1], size=(h, w), mode='bilinear', align_corners=True)
             preds_hb = F.interpolate(input=outputs[1][-1], size=(h, w), mode='bilinear', align_corners=True)
             preds_fb = F.interpolate(input=outputs[2][-1], size=(h, w), mode='bilinear', align_corners=True)
-            # if idx % 50 == 0:
-            #     img_vis = inv_preprocess(image, num_images=args.save_num)
-            #     label_vis = decode_predictions(target.int(), num_images=args.save_num, num_classes=args.num_classes)
-            #     pred_vis = decode_predictions(torch.argmax(preds, dim=1), num_images=args.save_num,
-            #                                   num_classes=args.num_classes)
-
-            #     # visual grids
-            #     img_grid = torchvision.utils.make_grid(torch.from_numpy(img_vis.transpose(0, 3, 1, 2)))
-            #     label_grid = torchvision.utils.make_grid(torch.from_numpy(label_vis.transpose(0, 3, 1, 2)))
-            #     pred_grid = torchvision.utils.make_grid(torch.from_numpy(pred_vis.transpose(0, 3, 1, 2)))
-            #     writer.add_image('val_images', img_grid, epoch * len(val_loader) + idx + 1)
-            #     writer.add_image('val_labels', label_grid, epoch * len(val_loader) + idx + 1)
-            #     writer.add_image('val_preds', pred_grid, epoch * len(val_loader) + idx + 1)
 
             # pixelAcc
             correct, labeled = batch_pix_accuracy(preds.data, target)
@@ -270,31 +257,9 @@ def validation(model, val_loader, epoch, writer):
             tbar.set_description('{} / {} | {pixAcc:.4f}, {IoU:.4f} |' \
                          '{pixAcc_hb:.4f}, {IoU_hb:.4f} |' \
                          '{pixAcc_fb:.4f}, {IoU_fb:.4f}'.format(idx + 1, len(val_loader), pixAcc=pixAcc, IoU=IoU,pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb))
-            # bar.suffix = '{} / {} | pixAcc: {pixAcc:.4f}, mIoU: {IoU:.4f} |' \
-            #              'pixAcc_hb: {pixAcc_hb:.4f}, mIoU_hb: {IoU_hb:.4f} |' \
-            #              'pixAcc_fb: {pixAcc_fb:.4f}, mIoU_fb: {IoU_fb:.4f}'.format(idx + 1, len(val_loader),
-            #                                                                         pixAcc=pixAcc, IoU=IoU,
-            #                                                                         pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,
-            #                                                                         pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb)
-            # bar.next()
 
-    print('\n per class iou part: {}'.format(per_class_iu(hist)*100))
-    print('per class iou hb: {}'.format(per_class_iu(hist_hb)*100))
-    print('per class iou fb: {}'.format(per_class_iu(hist_fb)*100))
-
-    mIoU = round(np.nanmean(per_class_iu(hist)) * 100, 2)
-    mIoU_hb = round(np.nanmean(per_class_iu(hist_hb)) * 100, 2)
-    mIoU_fb = round(np.nanmean(per_class_iu(hist_fb)) * 100, 2)
-
-    writer.add_scalar('val_pixAcc', pixAcc, epoch)
-    writer.add_scalar('val_mIoU', mIoU, epoch)
-    writer.add_scalar('val_pixAcc_hb', pixAcc_hb, epoch)
-    writer.add_scalar('val_mIoU_hb', mIoU_hb, epoch)
-    writer.add_scalar('val_pixAcc_fb', pixAcc_fb, epoch)
-    writer.add_scalar('val_mIoU_fb', mIoU_fb, epoch)
-    # bar.finish()
     tbar.close()
-    return pixAcc, mIoU
+    return pixAcc, IoU
 
 def validation0(model, val_loader, epoch, writer):
     # set evaluate mode
@@ -320,19 +285,6 @@ def validation0(model, val_loader, epoch, writer):
             preds = F.interpolate(input=outputs[0][0], size=(h, w), mode='bilinear', align_corners=True)
             preds_hb = F.interpolate(input=outputs[1][0], size=(h, w), mode='bilinear', align_corners=True)
             preds_fb = F.interpolate(input=outputs[2][0], size=(h, w), mode='bilinear', align_corners=True)
-            # if idx % 50 == 0:
-            #     img_vis = inv_preprocess(image, num_images=args.save_num)
-            #     label_vis = decode_predictions(target.int(), num_images=args.save_num, num_classes=args.num_classes)
-            #     pred_vis = decode_predictions(torch.argmax(preds, dim=1), num_images=args.save_num,
-            #                                   num_classes=args.num_classes)
-
-            #     # visual grids
-            #     img_grid = torchvision.utils.make_grid(torch.from_numpy(img_vis.transpose(0, 3, 1, 2)))
-            #     label_grid = torchvision.utils.make_grid(torch.from_numpy(label_vis.transpose(0, 3, 1, 2)))
-            #     pred_grid = torchvision.utils.make_grid(torch.from_numpy(pred_vis.transpose(0, 3, 1, 2)))
-            #     writer.add_image('val_images', img_grid, epoch * len(val_loader) + idx + 1)
-            #     writer.add_image('val_labels', label_grid, epoch * len(val_loader) + idx + 1)
-            #     writer.add_image('val_preds', pred_grid, epoch * len(val_loader) + idx + 1)
 
             # pixelAcc
             correct, labeled = batch_pix_accuracy(preds.data, target)
@@ -359,31 +311,9 @@ def validation0(model, val_loader, epoch, writer):
             tbar.set_description('{} / {} | {pixAcc:.4f}, {IoU:.4f} |' \
                          '{pixAcc_hb:.4f}, {IoU_hb:.4f} |' \
                          '{pixAcc_fb:.4f}, {IoU_fb:.4f}'.format(idx + 1, len(val_loader), pixAcc=pixAcc, IoU=IoU,pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb))
-            # bar.suffix = '{} / {} | pixAcc: {pixAcc:.4f}, mIoU: {IoU:.4f} |' \
-            #              'pixAcc_hb: {pixAcc_hb:.4f}, mIoU_hb: {IoU_hb:.4f} |' \
-            #              'pixAcc_fb: {pixAcc_fb:.4f}, mIoU_fb: {IoU_fb:.4f}'.format(idx + 1, len(val_loader),
-            #                                                                         pixAcc=pixAcc, IoU=IoU,
-            #                                                                         pixAcc_hb=pixAcc_hb, IoU_hb=IoU_hb,
-            #                                                                         pixAcc_fb=pixAcc_fb, IoU_fb=IoU_fb)
-            # bar.next()
 
-    print('\n per class iou part: {}'.format(per_class_iu(hist)*100))
-    print('per class iou hb: {}'.format(per_class_iu(hist_hb)*100))
-    print('per class iou fb: {}'.format(per_class_iu(hist_fb)*100))
-
-    mIoU = round(np.nanmean(per_class_iu(hist)) * 100, 2)
-    mIoU_hb = round(np.nanmean(per_class_iu(hist_hb)) * 100, 2)
-    mIoU_fb = round(np.nanmean(per_class_iu(hist_fb)) * 100, 2)
-
-    writer.add_scalar('val_pixAcc', pixAcc, epoch)
-    writer.add_scalar('val_mIoU', mIoU, epoch)
-    writer.add_scalar('val_pixAcc_hb', pixAcc_hb, epoch)
-    writer.add_scalar('val_mIoU_hb', mIoU_hb, epoch)
-    writer.add_scalar('val_pixAcc_fb', pixAcc_fb, epoch)
-    writer.add_scalar('val_mIoU_fb', mIoU_fb, epoch)
-    # bar.finish()
     tbar.close()
-    return pixAcc, mIoU
+    return pixAcc, IoU
 
 if __name__ == '__main__':
     args = parse_args()
