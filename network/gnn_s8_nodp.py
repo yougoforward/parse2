@@ -10,8 +10,45 @@ from modules.parse_mod import MagicModule, ASPPModule
 from modules.senet import se_resnext50_32x4d, se_resnet101, senet154
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
-from modules.convGRU import ConvGRU
-from modules.dcn import DFConv2d
+# from modules.convGRU import ConvGRU
+# from modules.dcn import DFConv2d
+class ConvGRU(nn.Module):
+    def __init__(self, input_dim, hidden_dim, kernel_size):
+        super(ConvGRU, self).__init__()
+        self.padding = kernel_size[0] // 2, kernel_size[1] // 2
+        self.hidden_dim = hidden_dim
+        self.conv_gates = nn.Conv2d(input_dim + hidden_dim, 2, kernel_size=1, padding=0, stride=1, bias=True)
+        self.conv_can = nn.Sequential(
+            nn.Conv2d(input_dim + hidden_dim, hidden_dim, kernel_size=kernel_size, padding=self.padding, stride=1, bias=False),
+            InPlaceABNSync(hidden_dim)
+        )
+
+        nn.init.orthogonal_(self.conv_gates.weight)
+        nn.init.constant_(self.conv_gates.bias, 0.)
+
+    def forward(self, input_tensor, h_cur):
+        """
+        :param self:
+        :param input_tensor: (b, c, h, w)
+            input is actually the target_model
+        :param h_cur: (b, c_hidden, h, w)
+            current hidden and cell states respectively
+        :return: h_next,
+            next hidden state
+        """
+        combined = torch.cat([input_tensor, h_cur], dim=1)
+        combined_conv = self.conv_gates(combined)
+
+        gamma, beta = torch.split(combined_conv, 1, dim=1)
+        reset_gate = torch.sigmoid(gamma)
+        update_gate = torch.sigmoid(beta)
+
+        combined = torch.cat([input_tensor, reset_gate*h_cur], dim=1)
+        cc_cnm = self.conv_can(combined)
+        cnm = torch.tanh(cc_cnm)
+
+        h_next = (1 - update_gate) * h_cur + update_gate * cnm
+        return h_next
 
 class Comp_att(nn.Module):
     def __init__(self, hidden_dim, parts_num):
@@ -30,7 +67,7 @@ class Composition(nn.Module):
     def __init__(self, hidden_dim):
         super(Composition, self).__init__()
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
@@ -54,7 +91,7 @@ class Decomposition(nn.Module):
     def __init__(self, hidden_dim=10):
         super(Decomposition, self).__init__()
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
@@ -158,7 +195,7 @@ class Dependency(nn.Module):
     def __init__(self, hidden_dim=10):
         super(Dependency, self).__init__()
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
@@ -175,16 +212,12 @@ class conv_Update(nn.Module):
         dtype = torch.cuda.FloatTensor
         self.update = ConvGRU(input_dim=hidden_dim,
                               hidden_dim=hidden_dim,
-                              kernel_size=(3, 3),
-                              num_layers=1,
-                              dtype=dtype,
-                              batch_first=True,
-                              bias=True,
-                              return_all_layers=False)
+                              kernel_size=(1, 1),
+                              )
 
     def forward(self, x, h, message):
-        _, out = self.update(message.unsqueeze(1), [h])
-        return out[0][0]
+        out = self.update(message, h)
+        return out
 
 class DecoderModule(nn.Module):
 
