@@ -308,7 +308,7 @@ class gnn_loss(nn.Module):
         # return 0.33*loss + 0.5*(0.4 * loss_hb + 0.4 * loss_fb) + \
         #        0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att + loss_dp_att) + 0.4 * loss_dsn
         # return (loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
-        return (loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn + 0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att)
+        return loss_final + 0.4 * loss_hb_final + 0.4 * loss_fb_final + 0.1*(loss ++loss_hb + loss_fb) + 0.4 * loss_dsn + 0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att)
 
 class gnn_s4_loss_noatt(nn.Module):
     """Lovasz loss for Alpha process"""
