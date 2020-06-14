@@ -17,7 +17,9 @@ class Comp_att(nn.Module):
     def __init__(self, hidden_dim, parts_num):
         super(Comp_att, self).__init__()
         self.comp_att = nn.Sequential(
-            nn.Conv2d(parts_num * hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
+            nn.Conv2d(parts_num * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
             nn.Sigmoid()
         )
     def forward(self, child_list):
@@ -41,10 +43,10 @@ class Decomp_att(nn.Module):
     def __init__(self, hidden_dim, parts_num):
         super(Decomp_att, self).__init__()
         self.decomp_map = nn.Sequential(
-            nn.Conv2d(hidden_dim, parts_num+1, kernel_size=1, padding=0, stride=1, bias=True)
+            nn.Conv2d(hidden_dim+parts_num*hidden_dim, parts_num+1, kernel_size=1, padding=0, stride=1, bias=True)
         )
-    def forward(self, parent):
-        decomp_map = self.decomp_map(parent)
+    def forward(self, parent, childs):
+        decomp_map = self.decomp_map(torch.cat([parent]+ childs, dim=1))
         return decomp_map
 
 
@@ -280,7 +282,7 @@ class Half_Graph(nn.Module):
 
     def forward(self, f_node, h_node_list, p_node_list, xh):
         # decomposition full node to half node
-        decomp_map = self.decomp_att(f_node)
+        decomp_map = self.decomp_att(f_node, h_node_list)
         decomp_list = self.decomp_fh_list(f_node, h_node_list, decomp_map)
 
         # composition part node to half node
@@ -344,8 +346,8 @@ class Part_Graph(nn.Module):
         for part in self.lower_part_list:
             lower_parts.append(p_node_list[part - 1])
 
-        decomp_map_u = self.decomp_att_u(h_node_list[0])
-        decomp_map_l = self.decomp_att_l(h_node_list[1])
+        decomp_map_u = self.decomp_att_u(h_node_list[0], upper_parts)
+        decomp_map_l = self.decomp_att_l(h_node_list[1], lower_parts)
         decomp_pu_list = self.decomp_hp(h_node_list[0], upper_parts, decomp_map_u)
         decomp_pl_list = self.decomp_hp(h_node_list[1], lower_parts, decomp_map_l)
 
