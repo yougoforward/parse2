@@ -89,9 +89,9 @@ class GNN_infer(nn.Module):
 
         # node supervision
         # multi-label classifier
-        self.f_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
-        self.h_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
-        self.p_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
+        self.f_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
+        self.h_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
+        self.p_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
         #final seg
         self.final_cls = Final_cls(in_dim, hidden_dim, self.cls_p)
 
@@ -129,7 +129,6 @@ class Final_cls(nn.Module):
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
         self.conv4 = nn.Sequential(
-           nn.Dropout2d(0.1),
            nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
         self.alpha = nn.Parameter(torch.ones(1))
 

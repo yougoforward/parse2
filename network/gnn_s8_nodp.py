@@ -431,9 +431,9 @@ class GNN_infer(nn.Module):
 
         # node supervision
         # multi-label classifier
-        self.f_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
-        self.h_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
-        self.p_seg = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
+        self.f_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
+        self.h_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
+        self.p_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
 
     def forward(self, xp, xh, xf, xl):
         # gnn inference at stride 8
@@ -453,7 +453,7 @@ class GNN_infer(nn.Module):
         f_seg_new = self.f_seg(torch.cat([f_node_list[0], f_node_new], dim=1))
         h_seg_new = self.h_seg(torch.cat([h_node_list[0]]+h_node_list_new, dim=1))
         p_seg_new = self.p_seg(torch.cat([p_node_list[0]]+p_node_list_new, dim=1))
-        
+
         return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_map_f], [decomp_map_u], [decomp_map_l], [comp_map_f], [comp_map_u], [comp_map_l], [Fdep_att_list]
 
 class Decoder(nn.Module):
