@@ -110,7 +110,7 @@ class GNN_infer(nn.Module):
         p_seg = self.p_seg(torch.cat(p_node_list, dim=1))
 
         #final readout
-        p_seg_final = self.final_cls(p_node_list, xl)
+        p_seg_final = self.final_cls(p_node_list, xp, xl)
         return [p_seg, p_seg_final], [h_seg], [f_seg], [], [], [
             ], [], [], [], []
 class Final_cls(nn.Module):
@@ -131,10 +131,11 @@ class Final_cls(nn.Module):
         self.conv4 = nn.Sequential(
            nn.Dropout2d(0.1),
            nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
+        self.alpha = nn.Parameter(torch.ones(1))
 
-    def forward(self, p_node_list, xl):
+    def forward(self, p_node_list, xp, xl):
         _, _, th, tw = xl.size()
-        xp = self.conv1(torch.cat(p_node_list, dim=1))
+        xp = self.alpha*self.conv1(torch.cat(p_node_list, dim=1))+xp
         xt = F.interpolate(xp, size=(th, tw), mode='bilinear', align_corners=True)
 
         skip = self.conv2(xl)
