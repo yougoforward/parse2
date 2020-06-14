@@ -12,9 +12,9 @@ from torch.nn import functional as F
 from torch.nn.parallel.scatter_gather import gather
 from torch.utils import data
 # from dataset.combo_dataloader import DataGenerator
-from dataset.data_person import DataGenerator
+from dataset.data_pascal import DataGenerator
 # from dataset.datasets import DatasetGenerator
-from network.abrnet2 import get_model
+from network.abrnet3 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 # from utils.lovasz_loss import ABRLovaszLoss
@@ -107,8 +107,8 @@ def main(args):
 
     # define dataloader
     train_loader = data.DataLoader(DataGenerator(root=args.root, list_path=args.lst,
-                                                    crop_size=args.crop_size, training=True), drop_last=True,
-                                   batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=False)
+                                                    crop_size=args.crop_size, training=True),
+                                   batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=False, drop_last=True,)
     val_loader = data.DataLoader(DataGenerator(root=args.val_root, list_path=args.val_lst,
                                                   crop_size=args.crop_size, training=False),
                                  batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=False)
@@ -132,7 +132,7 @@ def main(args):
         _ = train(model, train_loader, epoch, criterion, optimizer, writer)
 
         # validation
-        if epoch %10 ==0 or epoch > args.epochs*0.8:
+        if epoch %10 ==0 or epoch > args.epochs-5:
             val_pixacc, val_miou = validation(model, val_loader, epoch, writer)
             # save model
             if val_pixacc > best_val_pixAcc:
@@ -142,6 +142,7 @@ def main(args):
                 model_dir = os.path.join(args.snapshot_dir, args.method + '_miou.pth')
                 torch.save(seg_model.state_dict(), model_dir)
                 print('Model saved to %s' % model_dir)
+
     os.rename(model_dir, os.path.join(args.snapshot_dir, args.method + '_miou'+str(best_val_mIoU)+'.pth'))
     print('Complete using', time.time() - start, 'seconds')
     print('Best pixAcc: {} | Best mIoU: {}'.format(best_val_pixAcc, best_val_mIoU))
@@ -228,19 +229,19 @@ def validation(model, val_loader, epoch, writer):
             preds = F.interpolate(input=outputs[0], size=(h, w), mode='bilinear', align_corners=True)
             preds_hb = F.interpolate(input=outputs[1], size=(h, w), mode='bilinear', align_corners=True)
             preds_fb = F.interpolate(input=outputs[2], size=(h, w), mode='bilinear', align_corners=True)
-            if idx % 50 == 0:
-                img_vis = inv_preprocess(image, num_images=args.save_num)
-                label_vis = decode_predictions(target.int(), num_images=args.save_num, num_classes=args.num_classes)
-                pred_vis = decode_predictions(torch.argmax(preds, dim=1), num_images=args.save_num,
-                                              num_classes=args.num_classes)
+            # if idx % 50 == 0:
+            #     img_vis = inv_preprocess(image, num_images=args.save_num)
+            #     label_vis = decode_predictions(target.int(), num_images=args.save_num, num_classes=args.num_classes)
+            #     pred_vis = decode_predictions(torch.argmax(preds, dim=1), num_images=args.save_num,
+            #                                   num_classes=args.num_classes)
 
-                # visual grids
-                img_grid = torchvision.utils.make_grid(torch.from_numpy(img_vis.transpose(0, 3, 1, 2)))
-                label_grid = torchvision.utils.make_grid(torch.from_numpy(label_vis.transpose(0, 3, 1, 2)))
-                pred_grid = torchvision.utils.make_grid(torch.from_numpy(pred_vis.transpose(0, 3, 1, 2)))
-                writer.add_image('val_images', img_grid, epoch * len(val_loader) + idx + 1)
-                writer.add_image('val_labels', label_grid, epoch * len(val_loader) + idx + 1)
-                writer.add_image('val_preds', pred_grid, epoch * len(val_loader) + idx + 1)
+            #     # visual grids
+            #     img_grid = torchvision.utils.make_grid(torch.from_numpy(img_vis.transpose(0, 3, 1, 2)))
+            #     label_grid = torchvision.utils.make_grid(torch.from_numpy(label_vis.transpose(0, 3, 1, 2)))
+            #     pred_grid = torchvision.utils.make_grid(torch.from_numpy(pred_vis.transpose(0, 3, 1, 2)))
+            #     writer.add_image('val_images', img_grid, epoch * len(val_loader) + idx + 1)
+            #     writer.add_image('val_labels', label_grid, epoch * len(val_loader) + idx + 1)
+            #     writer.add_image('val_preds', pred_grid, epoch * len(val_loader) + idx + 1)
 
             # pixelAcc
             correct, labeled = batch_pix_accuracy(preds.data, target)

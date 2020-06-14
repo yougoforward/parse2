@@ -18,9 +18,9 @@ class PAM_Module(nn.Module):
 
         self.query_conv = nn.Conv2d(in_channels=in_dim, out_channels=key_dim, kernel_size=1)
         self.key_conv = nn.Conv2d(in_channels=in_dim, out_channels=key_dim, kernel_size=1)
-        # self.gamma = nn.Parameter(torch.zeros(1))
+        self.gamma = nn.Parameter(torch.zeros(1))
 
-        self.gamma = nn.Sequential(nn.Conv2d(in_channels=in_dim, out_channels=1, kernel_size=1, bias=True), nn.Sigmoid())
+        # self.gamma = nn.Sequential(nn.Conv2d(in_channels=in_dim, out_channels=1, kernel_size=1, bias=True), nn.Sigmoid())
 
         self.softmax = nn.Softmax(dim=-1)
 
@@ -32,7 +32,8 @@ class PAM_Module(nn.Module):
                 out : attention value + input feature
                 attention: B X (HxW) X (HxW)
         """
-        xp = self.pool(x)
+        # xp = self.pool(x)
+        xp = x
         # xp = x
         m_batchsize, C, height, width = x.size()
         m_batchsize, C, hp, wp = xp.size()
@@ -47,9 +48,9 @@ class PAM_Module(nn.Module):
         out = out.view(m_batchsize, C, height, width)
         # out = F.interpolate(out, (height, width), mode="bilinear", align_corners=True)
 
-        gamma = self.gamma(x)
-        out = (1-gamma)*out + gamma*x
-        # out = x+self.gamma*out
+        # gamma = self.gamma(x)
+        # out = (1-gamma)*out + gamma*x
+        out = x+self.gamma*out
         return out
 
 class ASPPModule(nn.Module):
@@ -127,7 +128,80 @@ class ASPPModule(nn.Module):
         # out = self.pam0(out)
         return out
 
+class ASPPModule2(nn.Module):
+    """ASPP with OC module: aspp + oc context"""
 
+    def __init__(self, in_dim, out_dim):
+        super(ASPPModule2, self).__init__()
+
+        self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
+                                 nn.Conv2d(in_dim, out_dim, 1, bias=False), InPlaceABNSync(out_dim))
+
+        self.dilation_0 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                        InPlaceABNSync(out_dim),
+                                        SEModule(out_dim, reduction=16))
+
+        self.dilation_1 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                        InPlaceABNSync(out_dim),
+                                        nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=6, dilation=6, bias=False),
+                                        InPlaceABNSync(out_dim),
+                                        SEModule(out_dim, reduction=16))
+
+        self.dilation_2 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                        InPlaceABNSync(out_dim),
+                                        nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=12, dilation=12, bias=False),
+                                        InPlaceABNSync(out_dim),
+                                        SEModule(out_dim, reduction=16))
+
+        self.dilation_3 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                        InPlaceABNSync(out_dim),
+                                        nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=18, dilation=18, bias=False),
+                                        InPlaceABNSync(out_dim),
+                                        SEModule(out_dim, reduction=16))
+
+        self.psaa_conv = nn.Sequential(nn.Conv2d(in_dim+5 * out_dim, out_dim, 1, padding=0, bias=False),
+                                        InPlaceABNSync(out_dim),
+                                        nn.Conv2d(out_dim, 5, 1, bias=True),
+                                        nn.Sigmoid())
+        # self.psaa_conv = nn.Sequential(nn.Conv2d(in_dim, out_dim, 1, padding=0, bias=False),
+        #                                 InPlaceABNSync(out_dim),
+        #                                 nn.Conv2d(out_dim, 5, 1, bias=True),
+        #                                 nn.Sigmoid())
+
+        # self.se = nn.Sequential(nn.Conv2d(out_dim, out_dim, 1, bias=True),
+        #                     nn.Sigmoid())
+
+        self.project = nn.Sequential(nn.Conv2d(out_dim * 5, out_dim, kernel_size=1, padding=0, bias=False),
+                                       InPlaceABNSync(out_dim))
+        self.pam0 = PAM_Module(in_dim=out_dim, key_dim=out_dim//8,value_dim=out_dim,out_dim=out_dim)
+    def forward(self, x):
+        # parallel branch
+        feat0 = self.dilation_0(x)
+        feat1 = self.dilation_1(x)
+        feat2 = self.dilation_2(x)
+        feat3 = self.dilation_3(x)
+        n, c, h, w = feat0.size()
+        gp = self.gap(x)
+        # se = self.se(gp)
+
+        feat4 = gp.expand(n, c, h, w)
+        # feat4 = F.interpolate(gp, (h, w), mode="bilinear", align_corners=True)
+
+        # psaa
+        # y1 = torch.cat((x, feat0, feat1, feat2, feat3, feat4), 1)
+        # y1 = torch.cat((x, feat0, feat1, feat2, feat3), 1)
+
+        # psaa_att = self.psaa_conv(y1)
+        # psaa_att = self.psaa_conv(x)
+
+        # psaa_att_list = torch.split(psaa_att, 1, dim=1)
+
+        # y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2, psaa_att_list[3] * feat3, psaa_att_list[4]*feat4), 1)
+        # y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2, psaa_att_list[3] * feat3, feat4), 1)
+        y2 = torch.cat((feat0, feat1, feat2, feat3, feat4), 1)
+        out = self.project(y2)
+        out = self.pam0(out)
+        return out
 
 class MagicModule(nn.Module):
     """ASPP based on SE and OC and Context Contrasted """

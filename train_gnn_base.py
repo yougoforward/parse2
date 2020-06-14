@@ -292,6 +292,7 @@ def validation(model, val_loader, epoch, writer):
     writer.add_scalar('val_mIoU_fb', mIoU_fb, epoch)
     # bar.finish()
     tbar.close()
+    
     return pixAcc, mIoU
 
 
