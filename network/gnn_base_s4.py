@@ -21,7 +21,6 @@ class DecoderModule(nn.Module):
                                    BatchNorm2d(512), nn.ReLU(inplace=False),
                                    nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   SEModule(256, reduction=16) 
                                    )
         self.alpha = nn.Parameter(torch.ones(1))
 
@@ -90,13 +89,15 @@ class GNN_infer(nn.Module):
         p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
 
         # node supervision
-        # f_seg = self.f_seg(torch.cat(f_node_list, dim=1))
-        # h_seg = self.h_seg(torch.cat(h_node_list, dim=1))
+        f_seg = self.f_seg(torch.cat(f_node_list, dim=1))
+        h_seg = self.h_seg(torch.cat(h_node_list, dim=1))
         # p_seg = self.p_seg(torch.cat(p_node_list, dim=1))
 
         #final readout
-        p_seg_final, h_seg_final, f_seg_final = self.final_cls(p_node_list, h_node_list, f_node_list, xl)
-        return [p_seg_final], [h_seg_final], [f_seg_final], [], [], [
+        p_node_list_final = self.final_cls(p_node_list, xl)
+        p_seg = self.p_seg(torch.cat(p_node_list_final, dim=1))
+
+        return [p_seg], [h_seg], [f_seg], [], [], [
             ], [], [], [], []
 class Final_cls(nn.Module):
     def __init__(self, in_dim, hidden_dim, cls_p, cls_h, cls_f):
@@ -105,35 +106,38 @@ class Final_cls(nn.Module):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
 
-        self.conv1 = nn.Sequential(nn.Conv2d(hidden_dim*cls_p, 256, kernel_size=1, padding=0, dilation=1, bias=False), BatchNorm2d(256), nn.ReLU(inplace=False))
+        # self.conv1 = nn.Sequential(nn.Conv2d(hidden_dim*cls_p, 256, kernel_size=1, padding=0, dilation=1, bias=False), BatchNorm2d(256), nn.ReLU(inplace=False))
 
         self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False), BatchNorm2d(48), nn.ReLU(inplace=False))
 
-        self.conv3 = nn.Sequential(nn.Conv2d(304, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
-        self.conv4 = nn.Sequential(
-           nn.Conv2d(256, cls_p, kernel_size=1, padding=0, dilation=1, bias=True))
+        self.conv3 = nn.ModuleList([nn.Sequential(
+            nn.Conv2d(48+hidden_dim, hidden_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False), 
+            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)) for i in range(cls_p)])
 
-        self.conv_h = nn.Sequential(nn.Conv2d(hidden_dim*cls_h, 256, kernel_size=1, padding=0, dilation=1, bias=False), BatchNorm2d(256), nn.ReLU(inplace=False),
-        nn.Conv2d(256, cls_h, kernel_size=1, padding=0, dilation=1, bias=True))
+        # self.conv4 = nn.Sequential(
+        #    nn.Conv2d(256, cls_p, kernel_size=1, padding=0, dilation=1, bias=True))
 
-        self.conv_f = nn.Sequential(nn.Conv2d(hidden_dim*cls_f, 256, kernel_size=1, padding=0, dilation=1, bias=False), BatchNorm2d(256), nn.ReLU(inplace=False),
-        nn.Conv2d(256, cls_f, kernel_size=1, padding=0, dilation=1, bias=True))
+        # self.conv_h = nn.Sequential(nn.Conv2d(hidden_dim*cls_h, 256, kernel_size=1, padding=0, dilation=1, bias=False), BatchNorm2d(256), nn.ReLU(inplace=False),
+        # nn.Conv2d(256, cls_h, kernel_size=1, padding=0, dilation=1, bias=True))
+
+        # self.conv_f = nn.Sequential(nn.Conv2d(hidden_dim*cls_f, 256, kernel_size=1, padding=0, dilation=1, bias=False), BatchNorm2d(256), nn.ReLU(inplace=False),
+        # nn.Conv2d(256, cls_f, kernel_size=1, padding=0, dilation=1, bias=True))
 
 
 
-    def forward(self, p_node_list, h_node_list, f_node_list, xl):
+    def forward(self, p_node_list, xl):
         _, _, th, tw = xl.size()
-        xp = self.conv1(torch.cat(p_node_list, dim=1))
-        xt = F.interpolate(xp, size=(th, tw), mode='bilinear', align_corners=True)
+        # xp = self.conv1(torch.cat(p_node_list, dim=1))
+        # xt = F.interpolate(xp, size=(th, tw), mode='bilinear', align_corners=True)
         skip = self.conv2(xl)
-
-        p_seg = self.conv4(self.conv3(torch.cat([xt, skip], dim=1)))
-        h_seg = self.conv_h(torch.cat(h_node_list, dim=1))
-        f_seg = self.conv_f(torch.cat(f_node_list, dim=1))
-        return p_seg, h_seg, f_seg
+        p_node_list = [self.conv3[i](torch.cat([F.interpolate(p_node_list[i], size=(th, tw), mode='bilinear', align_corners=True), skip], dim=1)) for i in range(self.cls_p)]
+        # p_seg = self.conv4(self.conv3(torch.cat([xt, skip], dim=1)))
+        return p_node_list
+        # h_seg = self.conv_h(torch.cat(h_node_list, dim=1))
+        # f_seg = self.conv_f(torch.cat(f_node_list, dim=1))
+        # return p_seg, h_seg, f_seg
 
 
 class Decoder(nn.Module):
