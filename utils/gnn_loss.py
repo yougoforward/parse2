@@ -201,7 +201,7 @@ class gnn_loss(nn.Module):
         self.aaf_loss = AAF_Loss(ignore_index, cls_p)
 
     def forward(self, preds, targets):
-        h, w = targets[0].size(1), targets[0].size(2)
+        n, h, w = targets[0].size()
         # seg loss
         loss=[]
         for i in range(len(preds[0])):
