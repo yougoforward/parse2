@@ -17,7 +17,8 @@ class DecoderModule(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(512), nn.ReLU(inplace=False),
                                    nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False)
+                                   BatchNorm2d(256), nn.ReLU(inplace=False),
+                                   SEModule(256, reduction=16) 
                                    )
 
         self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
@@ -50,6 +51,7 @@ class AlphaDecoder(nn.Module):
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
+                                   SEModule(256, reduction=16) 
                                    )
                                    
         self.cls_hb = nn.Conv2d(256, cls, kernel_size=1, padding=0, stride=1, bias=True)
