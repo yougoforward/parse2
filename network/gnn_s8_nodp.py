@@ -53,9 +53,7 @@ class Comp_att(nn.Module):
     def __init__(self, hidden_dim, parts_num):
         super(Comp_att, self).__init__()
         self.comp_att = nn.Sequential(
-            nn.Conv2d(parts_num * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
+            nn.Conv2d(parts_num * hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
             nn.Sigmoid()
         )
     def forward(self, child_list):
@@ -66,7 +64,7 @@ class Composition(nn.Module):
     def __init__(self, hidden_dim):
         super(Composition, self).__init__()
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
@@ -90,7 +88,7 @@ class Decomposition(nn.Module):
     def __init__(self, hidden_dim=10):
         super(Decomposition, self).__init__()
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
@@ -194,7 +192,7 @@ class Dependency(nn.Module):
     def __init__(self, hidden_dim=10):
         super(Dependency, self).__init__()
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
