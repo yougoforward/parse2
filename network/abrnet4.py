@@ -18,6 +18,7 @@ class DecoderModule(nn.Module):
                                    BatchNorm2d(512), nn.ReLU(inplace=False),
                                    nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
+                                   SEModule(256, reduction=16) 
                                    )
 
         self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
