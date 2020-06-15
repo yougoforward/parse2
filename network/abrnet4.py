@@ -50,6 +50,7 @@ class AlphaDecoder(nn.Module):
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
+                                   SEModule(256, reduction=16) 
                                    )
                                    
         self.cls_hb = nn.Conv2d(256, cls, kernel_size=1, padding=0, stride=1, bias=True)
