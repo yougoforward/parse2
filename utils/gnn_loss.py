@@ -197,7 +197,7 @@ class gnn_loss(nn.Module):
         self.num_classes = cls_p
         self.cls_h = cls_h
         self.cls_f = cls_f
-        self.bceloss = torch.nn.BCELoss(reduction='none')
+        self.bceloss = torch.nn.BCELoss(reduction='mean')
         self.aaf_loss = AAF_Loss(ignore_index, cls_p)
 
     def forward(self, preds, targets):
@@ -299,8 +299,7 @@ class gnn_loss(nn.Module):
             # one_hot_fb_list[i][targets[2]==255]=255
 
         # #
-        ignore = (targets[0] != self.ignore_index).float().unsqueeze(1)
-
+        valid = (targets[0] != self.ignore_index).unsqueeze(1)
         #decomp up
         upper_bg_node = 1-one_hot_hb_list[1]
         upper_parts=[]
@@ -344,7 +343,7 @@ class gnn_loss(nn.Module):
             pred_com_full = F.interpolate(input=preds[6][i], size=(h, w), mode='bilinear', align_corners=True)
             pred_com_u = F.interpolate(input=preds[7][i], size=(h, w), mode='bilinear', align_corners=True)
             pred_com_l = F.interpolate(input=preds[8][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_com_att.append(torch.sum(ignore*self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1), com_onehot) * ignore)/torch.sum(ignore))
+            loss_com_att.append(self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1)[valid.expand(n, 3, h, w)], com_onehot[valid.expand(n, 3, h, w)].float()))
         loss_com_att = sum(loss_com_att)
 
 
@@ -378,7 +377,7 @@ class gnn_loss(nn.Module):
         # return 0.33*loss + 0.5*(0.4 * loss_hb + 0.4 * loss_fb) + \
         #        0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att + loss_dp_att) + 0.4 * loss_dsn
         # return (loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
-        return (loss + 0.4*loss_hb + 0.4*loss_fb) + 0.4 * loss_dsn + 0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att)
+        return (loss + 0.4*loss_hb + 0.4*loss_fb)/len(preds[1]) + 0.4 * loss_dsn + 0.4*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att)/len(preds[1])
 
 class bce_gnn_loss(nn.Module):
     """Lovasz loss for Alpha process"""
