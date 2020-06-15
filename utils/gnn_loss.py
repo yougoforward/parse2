@@ -406,7 +406,7 @@ class bce_gnn_loss(nn.Module):
         self.aaf_loss = AAF_Loss(ignore_index, cls_p)
 
     def forward(self, preds, targets):
-        h, w = targets[0].size(1), targets[0].size(2)
+        n, h, w = targets[0].size()
 
         # #
         valid = (targets[0] != self.ignore_index)
@@ -448,7 +448,7 @@ class bce_gnn_loss(nn.Module):
         for i in range(len(preds[0])):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
             pred = F.sigmoid(pred)
-            loss.append(self.bceloss(pred[valid], torch.stack(one_hot_pb_list, dim=1)[valid]))
+            loss.append(self.bceloss(pred[valid.expand(n, self.num_classes, h, w)], torch.stack(one_hot_pb_list, dim=1)[valid.expand(n, self.num_classes, h,w)]))
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
         loss = sum(loss)
 
@@ -457,7 +457,7 @@ class bce_gnn_loss(nn.Module):
         for i in range(len(preds[1])):
             pred_hb = F.interpolate(input=preds[1][i], size=(h, w), mode='bilinear', align_corners=True)
             pred_hb = F.sigmoid(pred_hb)
-            loss_hb.append(self.bceloss(pred_hb[valid], torch.stack(one_hot_hb_list, dim=1)[valid].long()))
+            loss_hb.append(self.bceloss(pred_hb[valid.expand(n, self.cls_h, h, w)], torch.stack(one_hot_hb_list, dim=1)[valid.expand(n, self.cls_h, h, w)].long()))
             loss_hb.append(lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
                                       only_present=self.only_present))
         loss_hb = sum(loss_hb)
@@ -467,7 +467,7 @@ class bce_gnn_loss(nn.Module):
         for i in range(len(preds[2])):
             pred_fb = F.interpolate(input=preds[2][i], size=(h, w), mode='bilinear', align_corners=True)
             pred_fb = F.sigmoid(pred_fb)
-            loss_fb.append(self.bceloss(pred_fb[valid], torch.stack(one_hot_fb_list, dim=1)[valid].long()))
+            loss_fb.append(self.bceloss(pred_fb[valid.expand(n, self.cls_f, h, w)], torch.stack(one_hot_fb_list, dim=1)[valid.expand(n, self.cls_f, h, w)].long()))
             loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
                                       only_present=self.only_present))
         loss_fb = sum(loss_fb)
@@ -517,7 +517,7 @@ class bce_gnn_loss(nn.Module):
             pred_com_full = F.interpolate(input=preds[6][i], size=(h, w), mode='bilinear', align_corners=True)
             pred_com_u = F.interpolate(input=preds[7][i], size=(h, w), mode='bilinear', align_corners=True)
             pred_com_l = F.interpolate(input=preds[8][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_com_att.append(self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1)[valid], com_onehot[valid]))
+            loss_com_att.append(self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1)[valid.expand(n, 3, h, w)], com_onehot[valid.expand(n, 3, h, w)]))
         loss_com_att = sum(loss_com_att)
 
 
