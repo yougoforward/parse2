@@ -11,7 +11,6 @@ from modules.senet import se_resnext50_32x4d, se_resnet101, senet154
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 from modules.convGRU import ConvGRU
-from modules.dcn import DFConv2d
 
 class DecoderModule(nn.Module):
 
@@ -76,22 +75,13 @@ class GNN_infer(nn.Module):
         self.h_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
         self.p_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
 
-        #down sample
-        self.down_conv = nn.Sequential(
-            nn.Conv2d(in_dim, in_dim, kernel_size=3, padding=1, stride=2, bias=False),
-            BatchNorm2d(in_dim), nn.ReLU(inplace=False))
-
-
     def forward(self, xp, xh, xf):
         # gnn inference at stride 8
-        _,_,h,w = xh.size()
         # feature transform
         f_node_list = list(torch.split(self.f_conv(xf), self.hidden_dim, dim=1))
         h_node_list = list(torch.split(self.h_conv(xh), self.hidden_dim, dim=1))
         p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
-        # p_node_list_s4 = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
-        # p_node_list = [F.interpolate(p_node_list_s4[i], (h,w), mode='bilinear', align_corners=True) for i in range(len(p_node_list_s4))]
-
+        
         # node supervision
         f_seg = self.f_seg(torch.cat(f_node_list, dim=1))
         h_seg = self.h_seg(torch.cat(h_node_list, dim=1))
@@ -159,7 +149,5 @@ class OCNet(nn.Module):
         return x
 
 def get_model(num_classes=20):
-    # model = OCNet(Bottleneck, [3, 4, 6, 3], num_classes) #50
     model = OCNet(Bottleneck, [3, 4, 23, 3], num_classes)  # 101
-    # model = OCNet(Bottleneck, [3, 8, 36, 3], num_classes)  #152
     return model
