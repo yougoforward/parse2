@@ -409,7 +409,7 @@ class bce_gnn_loss(nn.Module):
         n, h, w = targets[0].size()
 
         # #
-        valid = (targets[0] != self.ignore_index)
+        valid = (targets[0] != self.ignore_index).unsqueeze(1)
         #one hot part
         labels_p = targets[0]
         one_label_p = labels_p.clone().long()
