@@ -24,7 +24,7 @@ from utils.visualize import inv_preprocess, decode_predictions
 
 
 def parse_args():
-    parser =se.ArgumentParser(description='PyTorch Segmentation')
+    parser =argparse.ArgumentParser(description='PyTorch Segmentation')
     parser.add_argument('--method', type=str, default='abr')
     # Datasets
     parser.add_argument('--root', default='./data/Person', type=str)
