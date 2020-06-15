@@ -132,7 +132,7 @@ def main(args):
         _ = train(model, train_loader, epoch, criterion, optimizer, writer)
 
         # validation
-        if epoch %10 ==0 or epoch > args.epochs-5:
+        if epoch %10 ==0 or epoch > args.epochs-10:
             # val_pixacc0, val_miou0 = validation0(model, val_loader, epoch, writer)
             # val_pixacc1, val_miou1 = validation1(model, val_loader, epoch, writer)
 

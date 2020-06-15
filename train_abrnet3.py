@@ -24,7 +24,7 @@ from utils.visualize import inv_preprocess, decode_predictions
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='PyTorch Segmentation')
+    parser =se.ArgumentParser(description='PyTorch Segmentation')
     parser.add_argument('--method', type=str, default='abr')
     # Datasets
     parser.add_argument('--root', default='./data/Person', type=str)
@@ -130,7 +130,7 @@ def main(args):
         _ = train(model, train_loader, epoch, criterion, optimizer, writer)
 
         # validation
-        if epoch %10 ==0 or epoch > args.epochs-5:
+        if epoch %10 ==0 or epoch > args.epochs-10:
             val_pixacc, val_miou = validation(model, val_loader, epoch, writer)
             # save model
             if val_pixacc > best_val_pixAcc:
