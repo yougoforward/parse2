@@ -268,7 +268,7 @@ class SEModule(nn.Module):
         x = self.relu(x)
         x = self.fc2(x)
         x = self.sigmoid(x)
-        return module_input * x +module_input
+        return module_input * x
 
 
 class SpatialAttention(nn.Module):
