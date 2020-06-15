@@ -517,7 +517,7 @@ class bce_gnn_loss(nn.Module):
             pred_com_full = F.interpolate(input=preds[6][i], size=(h, w), mode='bilinear', align_corners=True)
             pred_com_u = F.interpolate(input=preds[7][i], size=(h, w), mode='bilinear', align_corners=True)
             pred_com_l = F.interpolate(input=preds[8][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_com_att.append(self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1)[valid.expand(n, 3, h, w)], com_onehot[valid.expand(n, 3, h, w)]))
+            loss_com_att.append(self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1)[valid.expand(n, 3, h, w)], com_onehot[valid.expand(n, 3, h, w)].float()))
         loss_com_att = sum(loss_com_att)
 
 
