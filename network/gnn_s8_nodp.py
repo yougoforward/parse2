@@ -209,13 +209,20 @@ class conv_Update(nn.Module):
         super(conv_Update, self).__init__()
         self.hidden_dim = hidden_dim
         dtype = torch.cuda.FloatTensor
-        self.update = ConvGRU(input_dim=hidden_dim,
-                              hidden_dim=hidden_dim,
-                              kernel_size=(1, 1),
-                              )
-
+        # self.update = ConvGRU(input_dim=hidden_dim,
+        #                       hidden_dim=hidden_dim,
+        #                       kernel_size=(1, 1),
+        #                       )
+        self.update = nn.Sequential(
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim)
+        )
+        self.relu = nn.ReLU(inplace=False)
     def forward(self, x, h, message):
-        out = self.update(message, h)
+        # out = self.update(message, h)
+        out = self.relu(self.update(torch.cat([message, h], dim=1))+h)
         return out
 
 class DecoderModule(nn.Module):
