@@ -233,6 +233,7 @@ class DecoderModule(nn.Module):
                                    BatchNorm2d(512), nn.ReLU(inplace=False),
                                    nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
+                                   SEModule(256, reduction=16) 
                                    )
         self.alpha = nn.Parameter(torch.ones(1))
 
@@ -248,6 +249,7 @@ class AlphaDecoder(nn.Module):
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
+                                   SEModule(256, reduction=16) 
                                    )
                                    
         self.alpha_hb = nn.Parameter(torch.ones(1))
@@ -451,7 +453,9 @@ class GNN_infer(nn.Module):
         self.f_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
         self.h_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
         self.p_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
-
+        self.f_seg_new = nn.Sequential(nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
+        self.h_seg_new = nn.Sequential(nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
+        self.p_seg_new = nn.Sequential(nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
     def forward(self, xp, xh, xf):
         # gnn inference at stride 8
         # feature transform
@@ -467,9 +471,9 @@ class GNN_infer(nn.Module):
         # gnn infer
         p_node_list_new, h_node_list_new, f_node_new, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list = self.gnn(p_node_list[1:], h_node_list[1:], f_node_list[1], xp, xh, xf)
         # node supervision new
-        f_seg_new = self.f_seg(torch.cat([f_node_list[0], f_node_new], dim=1))
-        h_seg_new = self.h_seg(torch.cat([h_node_list[0]]+h_node_list_new, dim=1))
-        p_seg_new = self.p_seg(torch.cat([p_node_list[0]]+p_node_list_new, dim=1))
+        f_seg_new = self.f_seg_new(torch.cat([f_node_list[0], f_node_new], dim=1))
+        h_seg_new = self.h_seg_new(torch.cat([h_node_list[0]]+h_node_list_new, dim=1))
+        p_seg_new = self.p_seg_new(torch.cat([p_node_list[0]]+p_node_list_new, dim=1))
 
         return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_map_f], [decomp_map_u], [decomp_map_l], [comp_map_f], [comp_map_u], [comp_map_l], [Fdep_att_list]
 
