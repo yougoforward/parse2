@@ -14,9 +14,11 @@ class ASPPModule(nn.Module):
 
     def __init__(self, in_dim, out_dim, scale=1):
         super(ASPPModule, self).__init__()
-        self.atte_branch = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, dilation=1, bias=False),
-                                         InPlaceABNSync(out_dim),
-                                         SelfAttentionModule(in_dim=out_dim, out_dim=out_dim, key_dim=out_dim // 2, value_dim=out_dim, scale=scale))
+        # self.atte_branch = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, dilation=1, bias=False),
+        #                                  InPlaceABNSync(out_dim),
+        #                                  SelfAttentionModule(in_dim=out_dim, out_dim=out_dim, key_dim=out_dim // 2, value_dim=out_dim, scale=scale))
+        self.atte_branch = SelfAttentionModule(in_dim=out_dim, out_dim=out_dim, key_dim=out_dim // 2,
+                                                             value_dim=out_dim, scale=scale)
 
         self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
                                  nn.Conv2d(in_dim, out_dim, 1, bias=False), InPlaceABNSync(out_dim))
@@ -39,12 +41,12 @@ class ASPPModule(nn.Module):
                                         nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=18, dilation=18, bias=False),
                                         InPlaceABNSync(out_dim), SEModule(out_dim, reduction=16))
 
-        self.psaa_conv = nn.Sequential(nn.Conv2d(in_dim + 4 * out_dim, out_dim, 1, padding=0, bias=False),
+        self.psaa_conv = nn.Sequential(nn.Conv2d(in_dim + 5 * out_dim, out_dim, 1, padding=0, bias=False),
                                         InPlaceABNSync(out_dim),
-                                        nn.Conv2d(out_dim, 4, 1, bias=True),
+                                        nn.Conv2d(out_dim, 5, 1, bias=True),
                                         nn.Sigmoid())
 
-        self.project = nn.Sequential(nn.Conv2d(out_dim * 6, out_dim, kernel_size=1, padding=0, bias=False),
+        self.project = nn.Sequential(nn.Conv2d(out_dim * 5, out_dim, kernel_size=1, padding=0, bias=False),
                                        InPlaceABNSync(out_dim))
 
     def forward(self, x):
@@ -57,7 +59,7 @@ class ASPPModule(nn.Module):
         gp = self.gap(x)
 
         feat4 = gp.expand(n, c, h, w)
-        feat5 = self.atte_branch(x)
+        # feat5 = self.atte_branch(x)
 
         # psaa
         y1 = torch.cat((x, feat0, feat1, feat2, feat3), 1)
@@ -66,8 +68,9 @@ class ASPPModule(nn.Module):
 
         psaa_att_list = torch.split(psaa_att, 1, dim=1)
 
-        y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2, psaa_att_list[3] * feat3, feat4, feat5), 1)
+        y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2, psaa_att_list[3] * feat3, psaa_att_list[4]*feat4), 1)
         out = self.project(y2)
+        out = self.atte_branch(out)
         return out
 
 class MagicModule(nn.Module):
