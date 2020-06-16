@@ -14,9 +14,6 @@ class ASPPModule(nn.Module):
 
     def __init__(self, in_dim, out_dim, scale=1):
         super(ASPPModule, self).__init__()
-        # self.atte_branch = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=1, dilation=1, bias=False),
-        #                                  InPlaceABNSync(out_dim),
-        #                                  SelfAttentionModule(in_dim=out_dim, out_dim=out_dim, key_dim=out_dim // 2, value_dim=out_dim, scale=scale))
         self.atte_branch = SelfAttentionModule(in_dim=out_dim, out_dim=out_dim, key_dim=out_dim // 2,
                                                              value_dim=out_dim, scale=scale)
 
@@ -59,8 +56,6 @@ class ASPPModule(nn.Module):
         gp = self.gap(x)
 
         feat4 = gp.expand(n, c, h, w)
-        # feat5 = self.atte_branch(x)
-
         # psaa
         y1 = torch.cat((x, feat0, feat1, feat2, feat3, feat4), 1)
 
@@ -70,7 +65,6 @@ class ASPPModule(nn.Module):
 
         y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2, psaa_att_list[3] * feat3, psaa_att_list[4]*feat4), 1)
         out = self.project(y2)
-        # out = self.atte_branch(out)
         return out
 
 class MagicModule(nn.Module):
