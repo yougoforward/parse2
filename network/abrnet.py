@@ -27,7 +27,6 @@ class DecoderModule(nn.Module):
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
         self.conv4 = nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
-
         self.alpha = nn.Parameter(torch.ones(1))
 
     def forward(self, xt, xm, xl):
@@ -49,10 +48,10 @@ class AlphaHBDecoder(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16)
+                                   BatchNorm2d(256), nn.ReLU(inplace=False), 
+                                   SEModule(256, reduction=16)
                                    )
         self.cls_hb = nn.Conv2d(256, hbody_cls, kernel_size=1, padding=0, stride=1, bias=True)
-
         self.alpha_hb = nn.Parameter(torch.ones(1))
 
     def forward(self, x, skip):
@@ -71,10 +70,10 @@ class AlphaFBDecoder(nn.Module):
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False), SEModule(256, reduction=16)
+                                   BatchNorm2d(256), nn.ReLU(inplace=False), 
+                                   SEModule(256, reduction=16)
                                    )
         self.cls_fb = nn.Conv2d(256, fbody_cls, kernel_size=1, padding=0, stride=1, bias=True)
-
         self.alpha_fb = nn.Parameter(torch.ones(1))
 
     def forward(self, x, skip):

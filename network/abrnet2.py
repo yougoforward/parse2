@@ -26,7 +26,6 @@ class DecoderModule(nn.Module):
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
-
         self.conv4 = nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
         self.alpha = nn.Parameter(torch.ones(1))
 
@@ -52,7 +51,6 @@ class AlphaHBDecoder(nn.Module):
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    SEModule(256, reduction=16) 
                                    )
-                                   
         self.cls_hb = nn.Conv2d(256, hbody_cls, kernel_size=1, padding=0, stride=1, bias=True)
         self.alpha_hb = nn.Parameter(torch.ones(1))
 
@@ -102,7 +100,6 @@ class Decoder(nn.Module):
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
         seg = self.layer5(x[-1])
-
         x_seg, xt_fea = self.layer6(seg, x[1], x[0])
         alpha_hb = self.layerh(seg, x[1])
         alpha_fb = self.layerf(seg, x[1])
