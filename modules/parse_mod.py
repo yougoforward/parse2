@@ -70,7 +70,7 @@ class ASPPModule(nn.Module):
 
         y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2, psaa_att_list[3] * feat3, psaa_att_list[4]*feat4), 1)
         out = self.project(y2)
-        out = self.atte_branch(out)
+        # out = self.atte_branch(out)
         return out
 
 class MagicModule(nn.Module):
