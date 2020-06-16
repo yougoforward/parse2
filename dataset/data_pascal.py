@@ -53,7 +53,7 @@ class DataGenerator(data.Dataset):
         self.crop_size = crop_size
         self.training = training
         self.colorjitter = transforms.ColorJitter(brightness=0.1, contrast=0.5, saturation=0.5, hue=0.1)
-        self.random_rotate=RandomRotate(20)
+        self.random_rotate=RandomRotate(10)
 
     def __getitem__(self, index):
         mean = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
