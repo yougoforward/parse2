@@ -52,16 +52,12 @@ class ConvGRU(nn.Module):
 class Comp_att(nn.Module):
     def __init__(self, hidden_dim, parts_num):
         super(Comp_att, self).__init__()
-        # self.comp_att = nn.Sequential(
-        #     nn.Conv2d(parts_num * hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
-        #     nn.Sigmoid()
-        # )
         self.comp_att = nn.Sequential(
-            nn.Conv2d(parts_num * hidden_dim, parts_num, kernel_size=1, padding=0, groups=parts_num, bias=True),
+            nn.Conv2d(parts_num * hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
             nn.Sigmoid()
         )
     def forward(self, child_list):
-        comp_att = torch.sum(self.comp_att(torch.cat(child_list, dim=1)), dim=1, keepdim=True)
+        comp_att = self.comp_att(torch.cat(child_list, dim=1))
         return comp_att
 
 class Composition(nn.Module):
