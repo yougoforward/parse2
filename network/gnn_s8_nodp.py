@@ -64,15 +64,13 @@ class Composition(nn.Module):
     def __init__(self, hidden_dim):
         super(Composition, self).__init__()
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
 
     def forward(self, parent, child_list, comp_att):
-        # comp_message = sum([self.relation(torch.cat([parent, child * comp_att], dim=1)) for child in child_list])
-        comp_message = self.relation(torch.cat([parent, sum(child_list)*comp_att], dim=1))
+        comp_message = sum([self.relation(torch.cat([parent, child * comp_att], dim=1)) for child in child_list])
+        # comp_message = self.relation(torch.cat([parent, sum(child_list)*comp_att], dim=1))
         return comp_message
 
 class Decomp_att(nn.Module):
@@ -90,9 +88,7 @@ class Decomposition(nn.Module):
     def __init__(self, hidden_dim=10):
         super(Decomposition, self).__init__()
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
 
@@ -194,9 +190,7 @@ class Dependency(nn.Module):
     def __init__(self, hidden_dim=10):
         super(Dependency, self).__init__()
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
     def forward(self, hv, hu_context, dep_att_huv):
@@ -482,9 +476,9 @@ class GNN_infer(nn.Module):
         p_node_list_new, h_node_list_new, f_node_list_new, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf)
         # node supervision new
 
-        f_seg_new = self.f_seg(torch.cat(f_node_list_new, dim=1)+torch.cat(f_node_list, dim=1))
-        h_seg_new = self.h_seg(torch.cat(h_node_list_new, dim=1)+torch.cat(h_node_list, dim=1))
-        p_seg_new = self.p_seg(torch.cat(p_node_list_new, dim=1)+torch.cat(p_node_list, dim=1))
+        f_seg_new = self.f_seg(torch.cat(f_node_list_new, dim=1))
+        h_seg_new = self.h_seg(torch.cat(h_node_list_new, dim=1))
+        p_seg_new = self.p_seg(torch.cat(p_node_list_new, dim=1))
 
         return [p_seg_new], [h_seg_new], [f_seg_new], [decomp_map_f], [decomp_map_u], [decomp_map_l], [comp_map_f], [comp_map_u], [comp_map_l], [Fdep_att_list]
 
