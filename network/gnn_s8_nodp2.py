@@ -70,6 +70,7 @@ class Composition(nn.Module):
 
     def forward(self, parent, child_list, comp_att):
         comp_message = sum([self.relation(torch.cat([parent, child * comp_att], dim=1)) for child in child_list])
+        # comp_message = self.relation(torch.cat([parent, sum(child_list)*comp_att], dim=1))
         return comp_message
 
 class Decomp_att(nn.Module):
