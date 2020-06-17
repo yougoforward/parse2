@@ -61,7 +61,7 @@ class Comp_att(nn.Module):
             nn.Sigmoid()
         )
     def forward(self, child_list):
-        comp_att = torch.sum(self.comp_att(torch.cat(child_list, dim=1)), dim=1, keep_dims=True)
+        comp_att = torch.sum(self.comp_att(torch.cat(child_list, dim=1)), dim=1, keepdim=True)
         return comp_att
 
 class Composition(nn.Module):
