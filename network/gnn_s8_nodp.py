@@ -468,9 +468,9 @@ class GNN_infer(nn.Module):
         p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
 
         # node supervision
-        # f_seg = self.f_seg(torch.cat(f_node_list, dim=1))
-        # h_seg = self.h_seg(torch.cat(h_node_list, dim=1))
-        # p_seg = self.p_seg(torch.cat(p_node_list, dim=1))
+        f_seg = self.f_seg(torch.cat(f_node_list, dim=1))
+        h_seg = self.h_seg(torch.cat(h_node_list, dim=1))
+        p_seg = self.p_seg(torch.cat(p_node_list, dim=1))
 
         # gnn infer
         p_node_list_new, h_node_list_new, f_node_list_new, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf)
@@ -480,7 +480,7 @@ class GNN_infer(nn.Module):
         h_seg_new = self.h_seg_new(torch.cat(h_node_list_new, dim=1))
         p_seg_new = self.p_seg_new(torch.cat(p_node_list_new, dim=1))
 
-        return [p_seg_new], [h_seg_new], [f_seg_new], [decomp_map_f], [decomp_map_u], [decomp_map_l], [comp_map_f], [comp_map_u], [comp_map_l], [Fdep_att_list]
+        return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_map_f], [decomp_map_u], [decomp_map_l], [comp_map_f], [comp_map_u], [comp_map_l], [Fdep_att_list]
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
