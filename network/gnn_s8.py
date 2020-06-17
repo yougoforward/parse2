@@ -353,12 +353,12 @@ class Part_Graph(nn.Module):
         decomp_pu_list = self.decomp_hp(h_node_list[1], upper_parts, decomp_map_u)
         decomp_pl_list = self.decomp_hp(h_node_list[2], lower_parts, decomp_map_l)
 
-        F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(p_node_list, xp)
+        F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(p_node_list[1:], xp)
         # Fdep_att_list = []
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
             xpp_list_list[self.edge_index[i, 1]].append(
-                self.part_dp(p_node_list[self.edge_index[i, 1]], 
+                self.part_dp(p_node_list[self.edge_index[i, 1]+1], 
                 F_dep_list[self.edge_index[i, 0]], 
                 att_list_list[self.edge_index[i, 0]][1+self.part_list_list[self.edge_index[i, 0]].index(self.edge_index[i, 1])]))
         
