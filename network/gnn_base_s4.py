@@ -11,7 +11,6 @@ from modules.senet import se_resnext50_32x4d, se_resnet101, senet154
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 from modules.convGRU import ConvGRU
-from modules.dcn import DFConv2d
 
 class DecoderModule(nn.Module):
     
@@ -173,7 +172,5 @@ class OCNet(nn.Module):
         return x
 
 def get_model(num_classes=20):
-    # model = OCNet(Bottleneck, [3, 4, 6, 3], num_classes) #50
     model = OCNet(Bottleneck, [3, 4, 23, 3], num_classes)  # 101
-    # model = OCNet(Bottleneck, [3, 8, 36, 3], num_classes)  #152
     return model
