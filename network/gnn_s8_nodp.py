@@ -64,6 +64,8 @@ class Composition(nn.Module):
     def __init__(self, hidden_dim):
         super(Composition, self).__init__()
         self.relation = nn.Sequential(
+            nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
@@ -75,11 +77,16 @@ class Composition(nn.Module):
 class Decomp_att(nn.Module):
     def __init__(self, hidden_dim, parts_num):
         super(Decomp_att, self).__init__()
+        # self.decomp_map = nn.Sequential(
+        #     nn.Conv2d((parts_num+1)*hidden_dim, parts_num+1, kernel_size=1, padding=0, stride=1, bias=True)
+        # )
         self.decomp_map = nn.Sequential(
-            nn.Conv2d((parts_num+1)*hidden_dim, parts_num+1, kernel_size=1, padding=0, stride=1, bias=True)
+            nn.Conv2d(hidden_dim, parts_num+1, kernel_size=1, padding=0, stride=1, bias=True)
         )
     def forward(self, parent, childs):
-        decomp_map = self.decomp_map(torch.cat([parent]+ childs, dim=1))
+        # decomp_map = self.decomp_map(torch.cat([parent]+ childs, dim=1))
+        decomp_map = self.decomp_map(parent)
+
         return decomp_map
 
 
@@ -87,6 +94,8 @@ class Decomposition(nn.Module):
     def __init__(self, hidden_dim=10):
         super(Decomposition, self).__init__()
         self.relation = nn.Sequential(
+            nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
@@ -189,6 +198,8 @@ class Dependency(nn.Module):
     def __init__(self, hidden_dim=10):
         super(Dependency, self).__init__()
         self.relation = nn.Sequential(
+            nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
@@ -467,19 +478,22 @@ class GNN_infer(nn.Module):
         p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
 
         # node supervision
-        f_seg = self.f_seg(torch.cat(f_node_list, dim=1))
-        h_seg = self.h_seg(torch.cat(h_node_list, dim=1))
-        p_seg = self.p_seg(torch.cat(p_node_list, dim=1))
+        f_seg = []
+        h_seg = []
+        p_seg = []
+        f_seg.append(self.f_seg(torch.cat(f_node_list, dim=1)))
+        h_seg.append(self.h_seg(torch.cat(h_node_list, dim=1)))
+        p_seg.append(self.p_seg(torch.cat(p_node_list, dim=1)))
 
         # gnn infer
         p_node_list_new, h_node_list_new, f_node_list_new, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf)
         # node supervision new
 
-        f_seg_new = self.f_seg_new(torch.cat(f_node_list_new, dim=1))
-        h_seg_new = self.h_seg_new(torch.cat(h_node_list_new, dim=1))
-        p_seg_new = self.p_seg_new(torch.cat(p_node_list_new, dim=1))
+        f_seg.append(self.f_seg_new(torch.cat(f_node_list_new, dim=1)))
+        h_seg.append(self.h_seg_new(torch.cat(h_node_list_new, dim=1)))
+        p_seg.append(self.p_seg_new(torch.cat(p_node_list_new, dim=1)))
 
-        return [p_seg, p_seg_new], [h_seg, h_seg_new], [f_seg, f_seg_new], [decomp_map_f], [decomp_map_u], [decomp_map_l], [comp_map_f], [comp_map_u], [comp_map_l], [Fdep_att_list]
+        return p_seg, h_seg, f_seg, [decomp_map_f], [decomp_map_u], [decomp_map_l], [comp_map_f], [comp_map_u], [comp_map_l], [Fdep_att_list]
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
