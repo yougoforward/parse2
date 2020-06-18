@@ -92,23 +92,39 @@ class Decomp_att(nn.Module):
         return decomp_map
 
 
+# class Decomposition(nn.Module):
+#     def __init__(self, hidden_dim=10):
+#         super(Decomposition, self).__init__()
+#         self.relation = nn.Sequential(
+#             nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+#             BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
+#             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+#             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+#         )
+
+#     def forward(self, parent, child_list, decomp_map):
+#         decomp_att = torch.softmax(decomp_map, dim=1)
+#         decomp_att_list = torch.split(decomp_att, 1, dim=1)
+#         decomp_list = [self.relation(torch.cat([parent * decomp_att_list[i+1], child_list[i]], dim=1)) for i in
+#                           range(len(child_list))]
+#         return decomp_list
+
 class Decomposition(nn.Module):
-    def __init__(self, hidden_dim=10):
+    def __init__(self, in_dim=256, hidden_dim=10, parts_num=2):
         super(Decomposition, self).__init__()
+        # self.relation = nn.Sequential(
+        #     nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+        #     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+        # )
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
-        )
+            nn.Conv2d(in_dim+hidden_dim, hidden_dim * parts_num, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim * parts_num), nn.ReLU(inplace=False))
+        self.hidden_dim = hidden_dim
 
-    def forward(self, parent, child_list, decomp_map):
-        decomp_att = torch.softmax(decomp_map, dim=1)
-        decomp_att_list = torch.split(decomp_att, 1, dim=1)
-        decomp_list = [self.relation(torch.cat([parent * decomp_att_list[i+1], child_list[i]], dim=1)) for i in
-                          range(len(child_list))]
+    def forward(self, parent, child_context):
+        decomp_list = list(torch.split(self.relation(torch.cat([parent, child_context], dim=1)), self.hidden_dim, dim=1))
+
         return decomp_list
-
 
 def generate_spatial_batch(featmap_H, featmap_W):
     import numpy as np
@@ -362,7 +378,9 @@ class Part_Graph(nn.Module):
 
         self.decomp_att_u = Decomp_att(hidden_dim, self.upper_parts_len)
         self.decomp_att_l = Decomp_att(hidden_dim, self.lower_parts_len)
-        self.decomp_hp = Decomposition(hidden_dim)
+        # self.decomp_hp = Decomposition(hidden_dim)
+        self.decomp_hpu = Decomposition(in_dim, hidden_dim, parts_num=self.upper_parts_len)
+        self.decomp_hpl = Decomposition(in_dim, hidden_dim, parts_num=self.lower_parts_len)
 
         self.F_dep_list = Contexture(in_dim=in_dim, hidden_dim=hidden_dim, part_list_list=self.part_list_list)
 
@@ -380,11 +398,14 @@ class Part_Graph(nn.Module):
         for part in self.lower_part_list:
             lower_parts.append(p_node_list[part])
 
-        decomp_map_u = self.decomp_att_u(h_node_list[1], upper_parts)
-        decomp_map_l = self.decomp_att_l(h_node_list[2], lower_parts)
-        decomp_pu_list = self.decomp_hp(h_node_list[1], upper_parts, decomp_map_u)
-        decomp_pl_list = self.decomp_hp(h_node_list[2], lower_parts, decomp_map_l)
-
+        # decomp_map_u = self.decomp_att_u(h_node_list[1], upper_parts)
+        # decomp_map_l = self.decomp_att_l(h_node_list[2], lower_parts)
+        # decomp_pu_list = self.decomp_hp(h_node_list[1], upper_parts, decomp_map_u)
+        # decomp_pl_list = self.decomp_hp(h_node_list[2], lower_parts, decomp_map_l)
+        decomp_map_u=[]
+        decomp_map_l=[]
+        decomp_pu_list = self.decomp_hpu(h_node_list[1], xp)
+        decomp_pl_list = self.decomp_hpl(h_node_list[2], xp)
         # F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(p_node_list, xp)
         Fdep_att_list = []
         # xpp_list_list = [[] for i in range(self.cls_p - 1)]
