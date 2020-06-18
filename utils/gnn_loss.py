@@ -257,15 +257,15 @@ class gnn_loss(nn.Module):
         # loss_fb += lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
         #                               only_present=self.only_present)
 
-        # #decomp fh
-        # loss_fh_att = []
-        # for i in range(len(preds[3])):
-        #     pred_fh = F.interpolate(input=preds[3][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     # loss_fh_att.append(self.criterion2(pred_fh, targets[1].long()))
-        #     pred_fh = F.softmax(input=pred_fh, dim=1)
-        #     loss_fh_att.append(lovasz_softmax_flat(*flatten_probas(pred_fh, targets[1], self.ignore_index),
-        #                                        only_present=self.only_present))
-        # loss_fh_att = sum(loss_fh_att)
+        #decomp fh
+        loss_fh_att = []
+        for i in range(len(preds[3])):
+            pred_fh = F.interpolate(input=preds[3][i], size=(h, w), mode='bilinear', align_corners=True)
+            # loss_fh_att.append(self.criterion2(pred_fh, targets[1].long()))
+            pred_fh = F.softmax(input=pred_fh, dim=1)
+            loss_fh_att.append(lovasz_softmax_flat(*flatten_probas(pred_fh, targets[1], self.ignore_index),
+                                               only_present=self.only_present))
+        loss_fh_att = sum(loss_fh_att)
 
 
         #one hot part
@@ -381,7 +381,7 @@ class gnn_loss(nn.Module):
         #        0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att + loss_dp_att) + 0.4 * loss_dsn
         # return (loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
         # return (loss + 0.4*loss_hb + 0.4*loss_fb)/len(preds[1])+ 0.4 * loss_dsn + 0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att)/len(preds[3])
-        return (loss + 0.4*loss_hb + 0.4*loss_fb)/len(preds[1])+ 0.4 * loss_dsn + 0.1*(loss_up_att + loss_lp_att)/len(preds[3])
+        return (loss + 0.4*loss_hb + 0.4*loss_fb)/len(preds[1])+ 0.4 * loss_dsn + 0.1*(loss_fh_att + loss_up_att + loss_lp_att)/len(preds[3])
 class gnn_loss_dp(nn.Module):
     """Lovasz loss for Alpha process"""
 

@@ -6,7 +6,7 @@ from torch.nn import functional as F
 
 from inplace_abn.bn import InPlaceABNSync
 from modules.com_mod import Bottleneck, ResGridNet, SEModule
-from modules.parse_mod import MagicModule
+from modules.parse_mod import MagicModule, ASPPModule
 from modules.senet import se_resnext50_32x4d, se_resnet101, senet154
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
@@ -451,7 +451,8 @@ class GNN_infer(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
         super(Decoder, self).__init__()
-        self.layer5 = MagicModule(2048, 512, 1)
+        # self.layer5 = MagicModule(2048, 512, 1)
+        self.layer5 = ASPPModule(2048, 512)
         self.layer6 = DecoderModule(num_classes)
         self.layerh = AlphaHBDecoder(hbody_cls)
         self.layerf = AlphaFBDecoder(fbody_cls)
@@ -460,7 +461,7 @@ class Decoder(nn.Module):
             [[0, 1, 0, 0, 0, 0], [1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 0], [0, 0, 1, 0, 0, 0], [0, 1, 0, 0, 0, 1],
              [0, 0, 0, 0, 1, 0]], requires_grad=False)
         self.gnn_infer = GNN_infer(adj_matrix=self.adj_matrix, upper_half_node=[1, 2, 3, 4], lower_half_node=[5, 6],
-                                   in_dim=256, hidden_dim=32, cls_p=7, cls_h=3, cls_f=2)
+                                   in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2)
         #
         self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
                                        BatchNorm2d(512), nn.ReLU(inplace=False),
