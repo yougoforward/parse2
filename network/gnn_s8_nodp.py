@@ -61,17 +61,19 @@ class Comp_att(nn.Module):
         return comp_att
 
 class Composition(nn.Module):
-    def __init__(self, hidden_dim):
+    def __init__(self, hidden_dim, parts_num):
         super(Composition, self).__init__()
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
+        self.relation_list = nn.MoldueList([self.relation for i in range(parts_num)])
+        self.parts_num = parts_num
 
     def forward(self, parent, child_list, comp_att):
-        comp_message = sum([self.relation(torch.cat([parent, child * comp_att], dim=1)) for child in child_list])
+        comp_message = sum([self.relation_list[i](torch.cat([parent, child_list[i] * comp_att], dim=1)) for i in range(self.parts_num)])
         return comp_message
 
 class Decomp_att(nn.Module):
@@ -94,9 +96,9 @@ class Decomposition(nn.Module):
     def __init__(self, hidden_dim=10):
         super(Decomposition, self).__init__()
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
 
@@ -281,7 +283,7 @@ class Full_Graph(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2):
         super(Full_Graph, self).__init__()
         self.hidden = hidden_dim
-        self.comp_h = Composition(hidden_dim)
+        self.comp_h = Composition(hidden_dim, parts_num=2)
         self.comp_att = Comp_att(hidden_dim, cls_h-1)
         self.conv_Update = conv_Update(in_dim, hidden_dim)
 
@@ -306,7 +308,8 @@ class Half_Graph(nn.Module):
         self.decomp_fh_list = Decomposition(hidden_dim)
         self.comp_att_u = Comp_att(hidden_dim, self.upper_parts_len)
         self.comp_att_l = Comp_att(hidden_dim, self.lower_parts_len)
-        self.comp = Composition(hidden_dim)
+        self.comp_u = Composition(hidden_dim, parts_num=self.upper_parts_len)
+        self.comp_l = Composition(hidden_dim, parts_num=self.lower_parts_len)
 
         self.update_u = conv_Update(in_dim, hidden_dim)
         self.update_l = conv_Update(in_dim, hidden_dim)
@@ -323,7 +326,7 @@ class Half_Graph(nn.Module):
             upper_parts.append(p_node_list[part])
         comp_map_u = self.comp_att_u(upper_parts)
 
-        comp_u = self.comp(h_node_list[1], upper_parts, comp_map_u)
+        comp_u = self.comp_u(h_node_list[1], upper_parts, comp_map_u)
         message_u = decomp_list[0] + comp_u
         xh_u = self.update_u(xh, h_node_list[1], message_u)
 
@@ -333,7 +336,7 @@ class Half_Graph(nn.Module):
             lower_parts.append(p_node_list[part])
         comp_map_l = self.comp_att_l(lower_parts)
 
-        comp_l = self.comp(h_node_list[2], lower_parts, comp_map_l)
+        comp_l = self.comp_l(h_node_list[2], lower_parts, comp_map_l)
         message_l = decomp_list[1] + comp_l
         xh_l = self.update_l(xh, h_node_list[2], message_l)
 
@@ -428,13 +431,19 @@ class GNN(nn.Module):
 
     def forward(self, p_node_list, h_node_list, f_node_list, xp, xh, xf):
         # for full body node
-        f_node_new, comp_map_f = self.full_infer(f_node_list, h_node_list, p_node_list, xf)
+        # f_node_new_list, comp_map_f = self.full_infer(f_node_list, h_node_list, p_node_list, xf)
+        f_node_new_list = f_node_list
+        comp_map_f = []
         # for half body node
         h_node_list_new, decomp_map_f, comp_map_u, comp_map_l = self.half_infer(f_node_list, h_node_list, p_node_list, xh)
+        h_node_list_new = h_node_list
+        decomp_map_f = []
+        comp_map_u = []
+        comp_map_l = []
         # for part node
         p_node_list_new, decomp_map_u, decomp_map_l, Fdep_att_list = self.part_infer(f_node_list, h_node_list, p_node_list, xp)
 
-        return p_node_list_new, h_node_list_new, f_node_new, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list
+        return p_node_list_new, h_node_list_new, f_node_new_list, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list
 
 
 class GNN_infer(nn.Module):
@@ -481,9 +490,9 @@ class GNN_infer(nn.Module):
         f_seg = []
         h_seg = []
         p_seg = []
-        f_seg.append(self.f_seg(torch.cat(f_node_list, dim=1)))
-        h_seg.append(self.h_seg(torch.cat(h_node_list, dim=1)))
-        p_seg.append(self.p_seg(torch.cat(p_node_list, dim=1)))
+        # f_seg.append(self.f_seg(torch.cat(f_node_list, dim=1)))
+        # h_seg.append(self.h_seg(torch.cat(h_node_list, dim=1)))
+        # p_seg.append(self.p_seg(torch.cat(p_node_list, dim=1)))
 
         # gnn infer
         p_node_list_new, h_node_list_new, f_node_list_new, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf)
