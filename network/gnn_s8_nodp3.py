@@ -353,7 +353,7 @@ class Part_Graph(nn.Module):
         self.decomp_att_u = Decomp_att(hidden_dim, self.upper_parts_len)
         self.decomp_att_l = Decomp_att(hidden_dim, self.lower_parts_len)
         self.decomp_hpu = Decomposition(in_dim, hidden_dim, parts_num=self.upper_parts_len)
-        self.decomp_hpu = Decomposition(in_dim, hidden_dim, parts_num=self.lower_parts_len)
+        self.decomp_hpl = Decomposition(in_dim, hidden_dim, parts_num=self.lower_parts_len)
 
         self.F_dep_list = Contexture(in_dim=in_dim, hidden_dim=hidden_dim, part_list_list=self.part_list_list)
 
