@@ -69,7 +69,7 @@ class Composition(nn.Module):
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
-        self.relation_list = nn.MoldueList([self.relation for i in range(parts_num)])
+        self.relation_list = nn.ModuleList([self.relation for i in range(parts_num)])
         self.parts_num = parts_num
 
     def forward(self, parent, child_list, comp_att):
