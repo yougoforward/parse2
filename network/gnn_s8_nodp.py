@@ -242,7 +242,9 @@ class conv_Update(nn.Module):
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         ) 
     def forward(self, x, h, message):
-        out = self.update(message, h)
+        # out = self.update(message, h)
+        out = self.update(torch.cat([message, h], dim=1))
+
         return out
 
 # class conv_Update(nn.Module):
