@@ -11,7 +11,6 @@ from modules.senet import se_resnext50_32x4d, se_resnet101, senet154
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 from modules.convGRU import ConvGRU
-from modules.dcn import DFConv2d
 
 class Composition(nn.Module):
     def __init__(self, hidden_dim):
