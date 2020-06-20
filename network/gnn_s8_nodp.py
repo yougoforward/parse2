@@ -432,7 +432,7 @@ class Part_Graph(nn.Module):
 
             elif i + 1 in self.lower_part_list:
                 # message = decomp_pu_list[self.lower_part_list.index(i + 1)] + sum(xpp_list_list[i])
-                message = decomp_pu_list[self.lower_part_list.index(i + 1)]
+                # message = decomp_pu_list[self.lower_part_list.index(i + 1)]
                 message = h_node_list[2]
 
             xp_list_new.append(self.node_update_list[i](xp, p_node_list[i+1], message))
