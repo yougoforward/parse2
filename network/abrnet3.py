@@ -61,8 +61,7 @@ class AlphaDecoder(nn.Module):
     def forward(self, x, skip):
         _, _, h, w = skip.size()
         xfuse = self.conv1(F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True) + self.conv_m(skip))
-        output = self.conv1(xfuse)
-        output = self.cls_hb(output)
+        output = self.cls_hb(xfuse)
         return output
 
 
