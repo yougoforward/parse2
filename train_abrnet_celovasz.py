@@ -13,7 +13,7 @@ from torch.nn.parallel.scatter_gather import gather
 from torch.utils import data
 from dataset.data_pascal import DataGenerator
 # from dataset.datasets import DatasetGenerator
-from network.abrnet2 import get_model
+from network.abrnet3 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
 from utils.lovasz_loss import ABRLovaszCELoss as ABRLovaszLoss

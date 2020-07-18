@@ -14,9 +14,6 @@ class ASPPModule(nn.Module):
 
     def __init__(self, in_dim, out_dim, scale=1):
         super(ASPPModule, self).__init__()
-        self.atte_branch = SelfAttentionModule(in_dim=out_dim, out_dim=out_dim, key_dim=out_dim // 2,
-                                                             value_dim=out_dim, scale=scale)
-
         self.gap = nn.Sequential(nn.AdaptiveAvgPool2d(1),
                                  nn.Conv2d(in_dim, out_dim, 1, bias=False), InPlaceABNSync(out_dim))
 
