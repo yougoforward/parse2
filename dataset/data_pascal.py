@@ -53,7 +53,7 @@ class DataGenerator(data.Dataset):
         self.crop_size = crop_size
         self.training = training
         self.colorjitter = transforms.ColorJitter(brightness=0.1, contrast=0.5, saturation=0.5, hue=0.1)
-        self.random_rotate=RandomRotate(10)
+        self.random_rotate=RandomRotate(20)
 
     def __getitem__(self, index):
         mean = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
@@ -65,12 +65,13 @@ class DataGenerator(data.Dataset):
         if self.training:
 
             #colorjitter and rotate
-            img = Image.fromarray(img)
-            seg = Image.fromarray(seg)
-            img = self.colorjitter(img)
-            img, seg = self.random_rotate(img, seg)
-            img = np.array(img).astype(np.uint8)
-            seg = np.array(seg).astype(np.uint8)
+            if random.random() < 0.5:
+                img = Image.fromarray(img)
+                seg = Image.fromarray(seg)
+                img = self.colorjitter(img)
+                img, seg = self.random_rotate(img, seg)
+                img = np.array(img).astype(np.uint8)
+                seg = np.array(seg).astype(np.uint8)
                 
             
             # random scale
