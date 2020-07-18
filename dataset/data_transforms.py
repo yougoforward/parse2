@@ -81,7 +81,7 @@ class RandomRotate(object):
         w, h = image.size
         p = max((h, w))
         # angle = random.randint(0, self.angle * 2) - self.angle
-        angle = (random.randint(0, 4) - 2)*angle
+        angle = (random.randint(0, 4) - 2)*self.angle
 
         if label is not None:
             label = pad_image('constant', label, h, h, w, w, value=255)
