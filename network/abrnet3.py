@@ -46,6 +46,8 @@ class Decoder(nn.Module):
 
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
+        _,_,h,w = x[1].size()
+        x[-1] = F.interpolate(x[-1], size=(h, w), mode='bilinear', align_corners=True)
         x[-1] = self.relu(self.fuse(torch.cat([self.skip(x[1]), x[-1]], dim=1))+x[-1])
         seg = self.layer5(x[-1])
 
