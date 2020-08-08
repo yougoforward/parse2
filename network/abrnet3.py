@@ -6,7 +6,7 @@ from torch.nn import functional as F
 
 from inplace_abn.bn import InPlaceABNSync
 from modules.com_mod import Bottleneck, ResGridNet, SEModule
-from modules.parse_mod import MagicModule, ASPPModule
+from modules.parse_mod import MagicModule, ASPPModule2
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 
@@ -29,7 +29,7 @@ class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
         super(Decoder, self).__init__()
         # self.layer5 = MagicModule(2048, 512, 1)
-        self.layer5 = ASPPModule(2048, 512)
+        self.layer5 = ASPPModule2(512, 512)
         self.layer_part = DecoderModule(num_classes)
         self.layer_half = DecoderModule(hbody_cls)
         self.layer_full = DecoderModule(fbody_cls)
@@ -40,7 +40,7 @@ class Decoder(nn.Module):
 
         self.skip = nn.Sequential(nn.Conv2d(512, 512, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(512), nn.ReLU(inplace=False))
-        self.fuse = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, padding=1, bias=False),
+        self.fuse = nn.Sequential(nn.Conv2d(512+2048, 512, kernel_size=3, padding=1, bias=False),
                                    BatchNorm2d(512))
         self.relu = nn.ReLU()
 
