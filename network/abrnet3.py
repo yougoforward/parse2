@@ -38,16 +38,18 @@ class Decoder(nn.Module):
                                        BatchNorm2d(256), nn.ReLU(inplace=False),
                                        nn.Conv2d(256, num_classes, kernel_size=1, stride=1, padding=0, bias=True))
 
+        self.project = nn.Sequential(nn.Conv2d(2048, 512, kernel_size=3, padding=1, bias=False),
+                                   BatchNorm2d(512), nn.ReLU(inplace=False))
         self.skip = nn.Sequential(nn.Conv2d(512, 512, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(512), nn.ReLU(inplace=False))
-        self.fuse = nn.Sequential(nn.Conv2d(512+2048, 512, kernel_size=3, padding=1, bias=False),
+        self.fuse = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, padding=1, bias=False),
                                    BatchNorm2d(512))
         self.relu = nn.ReLU()
 
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
         _,_,h,w = x[1].size()
-        x[-1] = F.interpolate(x[-1], size=(h, w), mode='bilinear', align_corners=True)
+        x[-1] = F.interpolate(self.project(x[-1]), size=(h, w), mode='bilinear', align_corners=True)
         x[-1] = self.relu(self.fuse(torch.cat([self.skip(x[1]), x[-1]], dim=1))+x[-1])
         seg = self.layer5(x[-1])
 
