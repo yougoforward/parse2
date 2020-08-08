@@ -39,7 +39,7 @@ def parse_args():
     # Optimization options
     parser.add_argument('--epochs', default=150, type=int)
     parser.add_argument('--batch-size', default=20, type=int)
-    parser.add_argument('--lr', default=1e-2, type=float)
+    parser.add_argument('--learning-rate', default=1e-2, type=float)
     parser.add_argument('--lr-mode', type=str, default='poly')
     parser.add_argument('--ignore-label', type=int, default=255)
     # Checkpoints
