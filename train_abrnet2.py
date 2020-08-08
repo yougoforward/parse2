@@ -16,7 +16,7 @@ from dataset.data_pascal import DataGenerator
 from network.abrnet2 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
-from utils.lovasz_loss import ABRLovaszLoss
+from utils.lovasz_loss import ABRLovaszCELoss as ABRLovaszLoss
 
 
 from utils.metric import *

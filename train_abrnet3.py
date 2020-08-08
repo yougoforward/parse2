@@ -15,6 +15,7 @@ from dataset.data_pascal import DataGenerator
 # from dataset.datasets import DatasetGenerator
 from network.abrnet3 import get_model
 # from network.abrnet import get_model
+from progress.bar import Bar
 from utils.lovasz_loss import ABRLovaszCELoss as ABRLovaszLoss
 
 
@@ -24,7 +25,7 @@ from utils.visualize import inv_preprocess, decode_predictions
 
 
 def parse_args():
-    parser =argparse.ArgumentParser(description='PyTorch Segmentation')
+    parser = argparse.ArgumentParser(description='PyTorch Segmentation')
     parser.add_argument('--method', type=str, default='abr')
     # Datasets
     parser.add_argument('--root', default='./data/Person', type=str)
