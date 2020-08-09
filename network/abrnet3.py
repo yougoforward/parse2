@@ -14,10 +14,10 @@ class DecoderModule(nn.Module):
 
     def __init__(self, num_classes):
         super(DecoderModule, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=3, padding=1, bias=False),
-                                   BatchNorm2d(512), nn.ReLU(inplace=False))
+        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False))
 
-        self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(512, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
+        self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
 
     def forward(self, x):
         out = self.conv1(x)
