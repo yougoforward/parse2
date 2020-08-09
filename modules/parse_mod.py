@@ -105,15 +105,13 @@ class ASPPModule2(nn.Module):
         feat1 = self.dilation_1(x)
         feat2 = self.dilation_2(x)
         feat3 = self.dilation_3(x)
-        feat4 = self.dilation_4(x)
-        feat5 = self.dilation_5(x)
 
         n, c, h, w = feat0.size()
         gp = self.gap(x)
 
-        feat6 = gp.expand(n, c, h, w)
+        feat4 = gp.expand(n, c, h, w)
         # psaa
-        y1 = torch.cat((x, feat0, feat1, feat2, feat3, feat4, feat5, feat6), 1)
+        y1 = torch.cat((x, feat0, feat1, feat2, feat3, feat4), 1)
 
         psaa_att = self.psaa_conv(y1)
 
