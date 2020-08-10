@@ -119,7 +119,7 @@ class ASPPModule2(nn.Module):
 
         # y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2, psaa_att_list[3] * feat3, psaa_att_list[4]*feat4), 1)
         # out = self.project(y2)
-        out = self.project(torch.cat([feat0, feat1, feat2, feat3], dim=1)
+        out = self.project(torch.cat([feat0, feat1, feat2, feat3], dim=1))
         return out, feat4
 class ASPPModule(nn.Module):
     """ASPP"""
