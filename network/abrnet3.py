@@ -14,14 +14,16 @@ class DecoderModule(nn.Module):
 
     def __init__(self, num_classes):
         super(DecoderModule, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=1, padding=0, bias=False),
-                                   BatchNorm2d(512), nn.ReLU(inplace=False))
+        self.conv1 = nn.Sequential(nn.Conv2d(2*512, 256, kernel_size=1, padding=0, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False))
 
-        self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(2*512, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
+        self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
 
     def forward(self, x, gp):
-        out = self.conv1(x)
-        out = self.pred_conv(torch.cat([out,gp],dim=1))
+        n,c,h,w = x.size()
+        out = torch.cat([x,gp.expand_as(x)],dim=1)
+        out = self.conv1(out)
+        out = self.pred_conv(out)
         return out
 
 
@@ -38,8 +40,8 @@ class Decoder(nn.Module):
                                        BatchNorm2d(256), nn.ReLU(inplace=False),
                                        nn.Conv2d(256, num_classes, kernel_size=1, stride=1, padding=0, bias=True))
 
-        self.project = nn.Sequential(nn.Conv2d(2048, 512, kernel_size=3, padding=1, bias=False),
-                                   BatchNorm2d(512), nn.ReLU(inplace=False))
+        # self.project = nn.Sequential(nn.Conv2d(2048, 512, kernel_size=3, padding=1, bias=False),
+        #                            BatchNorm2d(512), nn.ReLU(inplace=False))
         self.skip = nn.Sequential(nn.Conv2d(512, 512, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(512), nn.ReLU(inplace=False))
         self.fuse = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, padding=1, bias=False),
@@ -48,13 +50,16 @@ class Decoder(nn.Module):
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
         _,_,h,w = x[1].size()
-        x[-1] = F.interpolate(self.project(x[-1]), size=(h, w), mode='bilinear', align_corners=True)
-        x[-1] = self.fuse(torch.cat([self.skip(x[1]), x[-1]], dim=1))
-        seg, gp = self.layer5(x[-1])
+        context, gp = self.layer5(x[-1])
+        # x[-1] = F.interpolate(self.project(x[-1]), size=(h, w), mode='bilinear', align_corners=True)
+        # x[-1] = self.fuse(torch.cat([self.skip(x[1]), x[-1]], dim=1))
 
-        seg_part = self.layer_part(seg, gp)
-        seg_half = self.layer_half(seg, gp)
-        seg_full = self.layer_full(seg, gp)
+        context = F.interpolate(context, size=(h, w), mode='bilinear', align_corners=True)
+        context = self.fuse(torch.cat([self.skip(x[1]), context], dim=1))
+
+        seg_part = self.layer_part(context, gp)
+        seg_half = self.layer_half(context, gp)
+        seg_full = self.layer_full(context, gp)
 
         return [seg_part, seg_half, seg_full, x_dsn]
 
