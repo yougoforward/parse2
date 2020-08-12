@@ -15,6 +15,7 @@ from dataset.data_pascal import DataGenerator
 # from dataset.datasets import DatasetGenerator
 from network.abrnet4 import get_model
 # from network.abrnet import get_model
+from progress.bar import Bar
 from utils.lovasz_loss import ABRLovaszCELoss as ABRLovaszLoss
 
 
@@ -36,9 +37,9 @@ def parse_args():
     parser.add_argument('--hbody-cls', type=int, default=3)
     parser.add_argument('--fbody-cls', type=int, default=2)
     # Optimization options
-    parser.add_argument('--epochs', default=151, type=int)
-    parser.add_argument('--batch-size', default=8, type=int)
-    parser.add_argument('--learning-rate', default=7e-3, type=float)
+    parser.add_argument('--epochs', default=150, type=int)
+    parser.add_argument('--batch-size', default=20, type=int)
+    parser.add_argument('--learning-rate', default=1e-2, type=float)
     parser.add_argument('--lr-mode', type=str, default='poly')
     parser.add_argument('--ignore-label', type=int, default=255)
     # Checkpoints

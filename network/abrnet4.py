@@ -6,65 +6,22 @@ from torch.nn import functional as F
 
 from inplace_abn.bn import InPlaceABNSync
 from modules.com_mod import Bottleneck, ResGridNet, SEModule
-from modules.parse_mod import MagicModule, ASPPModule, ASPPModule2
+from modules.parse_mod import MagicModule, ASPPModule2, ASPPModule3
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 
 class DecoderModule(nn.Module):
 
-    def __init__(self, num_classes):
+    def __init__(self, base_dilation, num_classes):
         super(DecoderModule, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(512), nn.ReLU(inplace=False),
-                                   nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   )
+        self.aspp = ASPPModule3(512,256,base_dilation)
 
-        self.conv2 = nn.Sequential(nn.Conv2d(256, 48, kernel_size=1, stride=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(48), nn.ReLU(inplace=False))
+        self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
 
-        self.conv3 = nn.Sequential(nn.Conv2d(304, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
-
-        self.conv4 = nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True)
-        self.alpha = nn.Parameter(torch.ones(1))
-
-    def forward(self, xt, xm, xl):
-        _, _, h, w = xm.size()
-        xt_fea = self.conv1(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
-        _, _, th, tw = xl.size()
-        xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
-        xl = self.conv2(xl)
-        x = torch.cat([xt, xl], dim=1)
-        x_fea = self.conv3(x)
-        x_seg = self.conv4(x_fea)
-        return x_seg, xt_fea
-
-
-class AlphaDecoder(nn.Module):
-    def __init__(self, cls):
-        super(AlphaDecoder, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   SEModule(256, reduction=16) 
-                                   )
-                                   
-        self.cls_hb = nn.Conv2d(256, cls, kernel_size=1, padding=0, stride=1, bias=True)
-        self.alpha_hb = nn.Parameter(torch.ones(1))
-
-    def forward(self, x, skip):
-        _, _, h, w = skip.size()
-
-        xup = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
-        xfuse = xup + self.alpha_hb * skip
-        output = self.conv1(xfuse)
-        output = self.cls_hb(output)
-        return output
-
+    def forward(self, x, gp):
+        out = self.aspp(x, gp)
+        out = self.pred_conv(out)
+        return out
 
 
 class Decoder(nn.Module):
@@ -72,22 +29,36 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
         # self.layer5 = MagicModule(2048, 512, 1)
         self.layer5 = ASPPModule2(2048, 512)
-        self.layer6 = DecoderModule(num_classes)
-        self.layerh = AlphaDecoder(hbody_cls)
-        self.layerf = AlphaDecoder(fbody_cls)
+        self.layer_part = DecoderModule(1, num_classes)
+        self.layer_half = DecoderModule(2, hbody_cls)
+        self.layer_full = DecoderModule(4, fbody_cls)
         
-        self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
-                                       BatchNorm2d(512), nn.ReLU(inplace=False),
-                                       nn.Conv2d(512, num_classes, kernel_size=1, stride=1, padding=0, bias=True))
+        self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1),
+                                       BatchNorm2d(256), nn.ReLU(inplace=False),
+                                       nn.Conv2d(256, num_classes, kernel_size=1, stride=1, padding=0, bias=True))
+
+        # self.project = nn.Sequential(nn.Conv2d(2048, 512, kernel_size=3, padding=1, bias=False),
+        #                            BatchNorm2d(512), nn.ReLU(inplace=False))
+        self.skip = nn.Sequential(nn.Conv2d(512, 512, kernel_size=1, padding=0, bias=False),
+                                   BatchNorm2d(512), nn.ReLU(inplace=False))
+        self.fuse = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, padding=1, bias=False),
+                                   BatchNorm2d(512), nn.ReLU(inplace=False))
+
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
-        seg = self.layer5(x[-1])
+        _,_,h,w = x[1].size()
+        context, gp = self.layer5(x[-1])
+        # x[-1] = F.interpolate(self.project(x[-1]), size=(h, w), mode='bilinear', align_corners=True)
+        # x[-1] = self.fuse(torch.cat([self.skip(x[1]), x[-1]], dim=1))
 
-        x_seg, xt_fea = self.layer6(seg, x[1], x[0])
-        alpha_hb = self.layerh(seg, x[1])
-        alpha_fb = self.layerf(seg, x[1])
+        context = F.interpolate(context, size=(h, w), mode='bilinear', align_corners=True)
+        context = self.fuse(torch.cat([self.skip(x[1]), context], dim=1))
 
-        return [x_seg, alpha_hb, alpha_fb, x_dsn]
+        seg_part = self.layer_part(context, gp)
+        seg_half = self.layer_half(context, gp)
+        seg_full = self.layer_full(context, gp)
+
+        return [seg_part, seg_half, seg_full, x_dsn]
 
 
 class OCNet(nn.Module):

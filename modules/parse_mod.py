@@ -65,6 +65,44 @@ BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 #         y2 = torch.cat((psaa_att_list[0] * feat0, psaa_att_list[1] * feat1, psaa_att_list[2] * feat2, psaa_att_list[3] * feat3, psaa_att_list[4]*feat4,psaa_att_list[5]*feat5, psaa_att_list[6]*feat6), 1)
 #         out = self.project(y2)
 #         return out
+class ASPPModule3(nn.Module):
+    """ASPP"""
+
+    def __init__(self, in_dim, out_dim, base_dilation=2):
+        super(ASPPModule3, self).__init__()
+        self.gp = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                        InPlaceABNSync(out_dim))
+        self.dilation_0 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                        InPlaceABNSync(out_dim))
+
+        self.dilation_1 = nn.Sequential(
+                                        nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=base_dilation, dilation=base_dilation, bias=False),
+                                        InPlaceABNSync(out_dim))
+
+        self.dilation_2 = nn.Sequential(
+                                        nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=2*base_dilation, dilation=2*base_dilation, bias=False),
+                                        InPlaceABNSync(out_dim))
+
+        self.dilation_3 = nn.Sequential(
+                                        nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=4*base_dilation, dilation=4*base_dilation, bias=False),
+                                        InPlaceABNSync(out_dim))
+
+        self.project = nn.Sequential(nn.Conv2d(out_dim * 5, out_dim, kernel_size=1, padding=0, bias=False),
+                                       InPlaceABNSync(out_dim))
+
+    def forward(self, x, gp):
+        # parallel branch
+        feat0 = self.dilation_0(x)
+        feat1 = self.dilation_1(x)
+        feat2 = self.dilation_2(x)
+        feat3 = self.dilation_3(x)
+
+        n, c, h, w = feat0.size()
+        gp = self.gp(gp)
+
+        out = self.project(torch.cat([feat0, feat1, feat2, feat3, gp], dim=1))
+        return out
+
 class ASPPModule2(nn.Module):
     """ASPP"""
 
