@@ -30,7 +30,7 @@ class DecoderModule(nn.Module):
 
     def __init__(self, num_classes):
         super(DecoderModule, self).__init__()
-        self.conv0 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, bias=False),
+        self.conv0 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
         self.gp = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
