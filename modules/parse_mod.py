@@ -75,16 +75,19 @@ class ASPPModule3(nn.Module):
         self.dilation_0 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
                                         InPlaceABNSync(out_dim))
 
-        self.dilation_1 = nn.Sequential(
-                                        nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=base_dilation, dilation=base_dilation, bias=False),
+        self.dilation_1 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                        InPlaceABNSync(out_dim),
+                                        nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=base_dilation, dilation=base_dilation, bias=False),
                                         InPlaceABNSync(out_dim))
 
-        self.dilation_2 = nn.Sequential(
-                                        nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=2*base_dilation, dilation=2*base_dilation, bias=False),
+        self.dilation_2 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                        InPlaceABNSync(out_dim),
+                                        nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=2*base_dilation, dilation=2*base_dilation, bias=False),
                                         InPlaceABNSync(out_dim))
 
-        self.dilation_3 = nn.Sequential(
-                                        nn.Conv2d(in_dim, out_dim, kernel_size=3, padding=4*base_dilation, dilation=4*base_dilation, bias=False),
+        self.dilation_3 = nn.Sequential(nn.Conv2d(in_dim, out_dim, kernel_size=1, padding=0, dilation=1, bias=False),
+                                        InPlaceABNSync(out_dim),
+                                        nn.Conv2d(out_dim, out_dim, kernel_size=3, padding=4*base_dilation, dilation=4*base_dilation, bias=False),
                                         InPlaceABNSync(out_dim))
 
         self.project = nn.Sequential(nn.Conv2d(out_dim * 5, out_dim, kernel_size=1, padding=0, bias=False),
@@ -100,7 +103,7 @@ class ASPPModule3(nn.Module):
         n, c, h, w = feat0.size()
         gp = self.gp(gp)
 
-        out = self.project(torch.cat([feat0, feat1, feat2, feat3, gp], dim=1))
+        out = self.project(torch.cat([feat0, feat1, feat2, feat3, gp.expand_as(feat0)], dim=1))
         return out
 
 class ASPPModule2(nn.Module):

@@ -10,22 +10,40 @@ from modules.parse_mod import MagicModule, ASPPModule2
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 
+# class DecoderModule(nn.Module):
+
+#     def __init__(self, num_classes):
+#         super(DecoderModule, self).__init__()
+#         self.conv1 = nn.Sequential(nn.Conv2d(2*512, 256, kernel_size=3, padding=1, bias=False),
+#                                    BatchNorm2d(256), nn.ReLU(inplace=False))
+
+#         self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
+
+#     def forward(self, x, gp):
+#         n,c,h,w = x.size()
+#         out = torch.cat([x,gp.expand_as(x)],dim=1)
+#         out = self.conv1(out)
+#         out = self.pred_conv(out)
+#         return out
+
 class DecoderModule(nn.Module):
 
     def __init__(self, num_classes):
         super(DecoderModule, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(2*512, 256, kernel_size=3, padding=1, bias=False),
+        self.conv0 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
-
+        self.gp = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False))
+        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False))
         self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
 
     def forward(self, x, gp):
-        n,c,h,w = x.size()
-        out = torch.cat([x,gp.expand_as(x)],dim=1)
+        x=self.conv0(x)
+        out = torch.cat([x,self.gp(gp).expand_as(x)],dim=1)
         out = self.conv1(out)
         out = self.pred_conv(out)
         return out
-
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
