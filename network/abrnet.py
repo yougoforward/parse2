@@ -34,11 +34,11 @@ class DecoderModule(nn.Module):
         xt = self.conv0(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
         _, _, th, tw = xl.size()
         xt_fea = self.conv1(xt)
-        xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
-        xl = self.conv2(xl)
-        x = torch.cat([xt, xl], dim=1)
-        x_fea = self.conv3(x)
-        x_seg = self.conv4(x_fea)
+        # xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
+        # xl = self.conv2(xl)
+        # x = torch.cat([xt, xl], dim=1)
+        # x_fea = self.conv3(x)
+        x_seg = self.conv4(xt_fea)
         return x_seg, xt_fea
 
 
