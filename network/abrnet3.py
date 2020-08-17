@@ -25,7 +25,6 @@ class DecoderModule(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
         super(Decoder, self).__init__()
-        # self.layer5 = MagicModule(2048, 512, 1)
         self.layer5 = ASPPModule(2048, 512)
         self.layer_part = DecoderModule(num_classes)
         self.layer_half = DecoderModule(hbody_cls)

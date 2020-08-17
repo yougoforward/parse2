@@ -13,41 +13,17 @@ BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 from modules.convGRU import ConvGRU
 
 class DecoderModule(nn.Module):
-
+    
     def __init__(self, num_classes):
         super(DecoderModule, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(512), nn.ReLU(inplace=False),
-                                   nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   SEModule(256, reduction=16) 
-                                   )
-        self.alpha = nn.Parameter(torch.ones(1))
+        self.conv0 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False))
+        # self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
 
-    def forward(self, xt, xm, xl):
-        _, _, h, w = xm.size()
-        xt_fea = self.conv1(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
-        return xt_fea
-
-class AlphaDecoder(nn.Module):
-    def __init__(self, hbody_cls):
-        super(AlphaDecoder, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   SEModule(256, reduction=16) 
-                                   )
-                                   
-        self.alpha_hb = nn.Parameter(torch.ones(1))
-
-    def forward(self, x, skip):
-        _, _, h, w = skip.size()
-
-        xup = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
-        xfuse = xup + self.alpha_hb * skip
-        output = self.conv1(xfuse)
-        return output
+    def forward(self, x):
+        out=self.conv0(x)
+        # out = self.pred_conv(out)
+        return out
 
 
 class GNN_infer(nn.Module):
@@ -102,11 +78,21 @@ class GNN_infer(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
         super(Decoder, self).__init__()
-        # self.layer5 = MagicModule(2048, 512, 1)
         self.layer5 = ASPPModule(2048, 512)
-        self.layer6 = DecoderModule(num_classes)
-        self.layerh = AlphaDecoder(hbody_cls)
-        self.layerf = AlphaDecoder(fbody_cls)
+        self.layer_part = DecoderModule(num_classes)
+        self.layer_half = DecoderModule(hbody_cls)
+        self.layer_full = DecoderModule(fbody_cls)
+        
+        self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1),
+                                       BatchNorm2d(256), nn.ReLU(inplace=False),
+                                       nn.Conv2d(256, num_classes, kernel_size=1, stride=1, padding=0, bias=True))
+
+        self.skip = nn.Sequential(nn.Conv2d(512, 512, kernel_size=1, padding=0, bias=False),
+                                   BatchNorm2d(512), nn.ReLU(inplace=False),
+                                   )
+        self.fuse = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, padding=1, bias=False),
+                                   BatchNorm2d(512), nn.ReLU(inplace=False))
+
         
         # adjacent matrix for pascal person 
         self.adj_matrix = torch.tensor(
@@ -123,12 +109,14 @@ class Decoder(nn.Module):
 
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
+        _,_,h,w = x[1].size()
         context = self.layer5(x[-1])
+        context = F.interpolate(context, size=(h, w), mode='bilinear', align_corners=True)
+        context = self.fuse(torch.cat([self.skip(x[1]), context], dim=1))
 
-        # direct infer
-        p_fea = self.layer6(context, x[1], x[0])
-        h_fea = self.layerh(context, x[1])
-        f_fea = self.layerf(context, x[1])
+        p_fea = self.layer_part(context)
+        h_fea = self.layer_half(context)
+        f_fea = self.layer_full(context)
 
         # gnn infer
         p_seg, h_seg, f_seg, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, \
