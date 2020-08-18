@@ -11,8 +11,17 @@ from modules.senet import se_resnext50_32x4d, se_resnet101, senet154
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 from modules.convGRU import ConvGRU
-from modules.dcn import DFConv2d
 
+class DecoderModule(nn.Module):
+    
+    def __init__(self, num_classes):
+        super(DecoderModule, self).__init__()
+        self.conv0 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False))
+    def forward(self, x):
+        out=self.conv0(x)
+        return out
+        
 class Comp_att(nn.Module):
     def __init__(self, hidden_dim, parts_num):
         super(Comp_att, self).__init__()
@@ -177,42 +186,6 @@ class conv_Update(nn.Module):
     def forward(self, x, h, message):
         _, out = self.update(message.unsqueeze(1), [h])
         return out[0][0]
-
-class DecoderModule(nn.Module):
-    
-    def __init__(self, num_classes):
-        super(DecoderModule, self).__init__()
-        self.conv0 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=3, padding=1, dilation=1, bias=False),
-                                   BatchNorm2d(512), nn.ReLU(inplace=False))
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
-        self.alpha = nn.Parameter(torch.ones(1))
-
-    def forward(self, xt, xm):
-        _, _, h, w = xm.size()
-        xt = self.conv0(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
-        xt_fea = self.conv1(xt)
-        return xt_fea
-
-class AlphaDecoder(nn.Module):
-    def __init__(self, hbody_cls):
-        super(AlphaDecoder, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   SEModule(256, reduction=16) 
-                                   )
-                                   
-        self.alpha_hb = nn.Parameter(torch.ones(1))
-
-    def forward(self, x, skip):
-        _, _, h, w = skip.size()
-
-        xup = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
-        xfuse = xup + self.alpha_hb * skip
-        output = self.conv1(xfuse)
-        return output
 
 class Full_Graph(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2):
