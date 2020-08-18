@@ -84,7 +84,6 @@ class Part_Graph(nn.Module):
         self.upper_part_list = upper_part_list
         self.lower_part_list = lower_part_list
 
-        self.node_update_list = nn.ModuleList([conv_Update(in_dim, hidden_dim) for i in range(self.cls_p - 1)])
         self.decomp_half = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
         self.conv_bg = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, bias=False),
