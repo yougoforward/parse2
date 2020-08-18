@@ -73,11 +73,11 @@ class Half_Graph(nn.Module):
             if i==0:
                 node = self.conv_bg(torch.cat([f_node_list[0], h_node_list[0],p_node_list[0]], dim=1))
             elif i==1:
-                comp = self.comp_u(torch.cat(upper_parts.append(f_node_list[1]), dim=1))
+                comp = self.comp_u(torch.cat(upper_parts.append(h_node_list[1]), dim=1))
                 decomp = self.decomp_full(torch.cat([f_node_list[1], h_node_list[1]], dim=1))
                 node = comp+decomp
             elif i==2:
-                comp = self.comp_l(torch.cat(lower_parts.append(f_node_list[1]), dim=1))
+                comp = self.comp_l(torch.cat(lower_parts.append(h_node_list[2]), dim=1))
                 decomp = self.decomp_full(torch.cat([f_node_list[1], h_node_list[2]], dim=1))
                 node = comp+decomp
             h_node_list_new.append(node)
