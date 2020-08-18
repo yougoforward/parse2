@@ -101,12 +101,12 @@ class Part_Graph(nn.Module):
         p_node_list_new = []
         for i in range(self.cls_p):
             if i==0:
-                node = self.conv_bg(torch.cat([h_node_list[0], p_node_list[0]]))
+                node = self.conv_bg(torch.cat([h_node_list[0], p_node_list[0]], dim=1))
             elif i in self.upper_part_list:
-                node = self.decomp_half(torch.cat([h_node_list[1], p_node_list[i]]))
+                node = self.decomp_half(torch.cat([h_node_list[1], p_node_list[i]], dim=1))
 
             elif i  in self.lower_part_list:
-                node = self.decomp_half(torch.cat([h_node_list[2], p_node_list[i]]))
+                node = self.decomp_half(torch.cat([h_node_list[2], p_node_list[i]], dim=1))
 
             p_node_list_new.append(node)
         return p_node_list_new
