@@ -60,17 +60,25 @@ class Half_Graph(nn.Module):
                                    BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
 
     def forward(self, f_node_list, h_node_list, p_node_list, xh):
+        upper_parts = []
+        for part in self.upper_part_list:
+            upper_parts.append(p_node_list[part])
+
+        lower_parts = []
+        for part in self.lower_part_list:
+            lower_parts.append(p_node_list[part])
+
         h_node_list_new = []
         for i in range(self.cls_h):
             if i==0:
                 node = self.conv_bg(torch.cat([f_node_list[0], h_node_list[0],p_node_list[0]], dim=1))
             elif i==1:
                 comp = self.comp_u(torch.cat(upper_parts.append(f_node_list[1]), dim=1))
-                decomp = self.decomp_full(torch.cat([f_node_list[1], h_node_list[i]], dim=1))
+                decomp = self.decomp_full(torch.cat([f_node_list[1], h_node_list[1]], dim=1))
                 node = comp+decomp
             elif i==2:
                 comp = self.comp_l(torch.cat(lower_parts.append(f_node_list[1]), dim=1))
-                decomp = self.decomp_full(torch.cat([f_node_list[1], h_node_list[i]], dim=1))
+                decomp = self.decomp_full(torch.cat([f_node_list[1], h_node_list[2]], dim=1))
                 node = comp+decomp
             h_node_list_new.append(node)
 
