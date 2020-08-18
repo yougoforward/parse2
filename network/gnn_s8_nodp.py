@@ -24,6 +24,7 @@ class DecoderModule(nn.Module):
 class Full_Graph(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2):
         super(Full_Graph, self).__init__()
+        self.cls_f = cls_f
         self.comp_full = nn.Sequential(nn.Conv2d(3*hidden_dim, hidden_dim, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
         self.conv_bg = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, bias=False),
@@ -31,7 +32,7 @@ class Full_Graph(nn.Module):
 
     def forward(self, f_node_list, h_node_list, p_node_list, xf):
         f_node_list_new = []
-        for i in range(self.cls_h):
+        for i in range(self.cls_f):
             if i==0:
                 node = self.conv_bg(torch.cat([f_node_list[0], h_node_list[0]], dim=1))
             elif i==1:
