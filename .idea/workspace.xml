@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="3505028e-91f7-4c5e-aa0d-9123ef1a5a96" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/network/gnn_base_s82.py" beforeDir="false" afterPath="$PROJECT_DIR$/network/gnn_base_s82.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/network/gnn_s8_nodp2.py" beforeDir="false" afterPath="$PROJECT_DIR$/network/gnn_s8_nodp2.py" afterDir="false" />
     </list>
