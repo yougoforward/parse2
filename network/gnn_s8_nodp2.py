@@ -326,7 +326,6 @@ class Part_Graph(nn.Module):
 
         self.decomp_att_u = Decomp_att(hidden_dim, self.upper_parts_len)
         self.decomp_att_l = Decomp_att(hidden_dim, self.lower_parts_len)
-        # self.decomp_hp = Decomposition(hidden_dim)
         self.decomp_hpu = Decomposition(hidden_dim, self.upper_parts_len)
         self.decomp_hpl = Decomposition(hidden_dim, self.lower_parts_len)
 
@@ -348,8 +347,8 @@ class Part_Graph(nn.Module):
 
         decomp_map_u = self.decomp_att_u(h_node_list[1], upper_parts)
         decomp_map_l = self.decomp_att_l(h_node_list[2], lower_parts)
-        decomp_pu_list = self.decomp_hp(h_node_list[1], upper_parts, decomp_map_u)
-        decomp_pl_list = self.decomp_hp(h_node_list[2], lower_parts, decomp_map_l)
+        decomp_pu_list = self.decomp_hpu(h_node_list[1], upper_parts, decomp_map_u)
+        decomp_pl_list = self.decomp_hpl(h_node_list[2], lower_parts, decomp_map_l)
 
         # F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(p_node_list, xp)
         Fdep_att_list = []
