@@ -32,7 +32,6 @@ class Decomposition(nn.Module):
     def __init__(self, hidden_dim=10, parts=2):
         super(Decomposition, self).__init__()
         self.conv_fh = nn.Sequential(
-            nn.Conv2d(
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
@@ -315,68 +314,49 @@ class GNN_infer(nn.Module):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
 
-        # feature transform
+        # node feature transform 
         self.p_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * (cls_p - 1), kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim * (cls_p - 1)), nn.ReLU(inplace=False))
+            nn.Conv2d(in_dim, hidden_dim * cls_p, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim * cls_p), nn.ReLU(inplace=False))
         self.h_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * (cls_h - 1), kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim * (cls_h - 1)), nn.ReLU(inplace=False))
+            nn.Conv2d(in_dim, hidden_dim * cls_h, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim * cls_h), nn.ReLU(inplace=False))
         self.f_conv = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim * (cls_f - 1), kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim * (cls_f - 1)), nn.ReLU(inplace=False))
-        self.bg_conv = nn.Sequential(
-            nn.Conv2d(3 * in_dim, hidden_dim, kernel_size=1, padding=0, stride=1,
-                      bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+            nn.Conv2d(in_dim, hidden_dim * cls_f, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim * cls_f), nn.ReLU(inplace=False))
 
         # gnn infer
         self.gnn = GNN(adj_matrix, upper_half_node, lower_half_node, self.in_dim, self.hidden_dim, self.cls_p,
                        self.cls_h, self.cls_f)
 
         # node supervision
-        self.node_cls_final = nn.Conv2d(hidden_dim * (cls_p + cls_h + cls_f - 2), (cls_p + cls_h + cls_f - 2),
-                                        kernel_size=1, padding=0, stride=1, bias=True,
-                                        groups=(cls_p + cls_h + cls_f - 2))
-        self.final_cls = nn.Conv2d((cls_p + cls_h + cls_f - 2) * hidden_dim+in_dim, cls_p, kernel_size=1, padding=0, stride=1,
-                      bias=True)
-
+        self.node_seg = nn.Conv2d(hidden_dim, 1, 1)
         self.softmax = nn.Softmax(dim=1)
-
     def forward(self, xp, xh, xf, xl):
-        # _, _, th, tw = xp.size()
-        # _, _, h, w = xh.size()
-        #
-        # xh = F.interpolate(xh, (th, tw), mode='bilinear', align_corners=True)
-        # xf = F.interpolate(xf, (th, tw), mode='bilinear', align_corners=True)
+        # gnn inference at stride 8
         # feature transform
-        f_node = self.f_conv(xf)
-        p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
+        f_node_list = list(torch.split(self.f_conv(xf), self.hidden_dim, dim=1))
         h_node_list = list(torch.split(self.h_conv(xh), self.hidden_dim, dim=1))
+        p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
         bg_node = self.bg_conv(torch.cat([xp, xh, xf], dim=1))
         # node supervision
-        node = torch.cat([f_node] + h_node_list + p_node_list, dim=1)
-        node_seg = self.node_cls_final(torch.cat([bg_node, node], dim=1))
-        node_seg_list = list(torch.split(node_seg, 1, dim=1))
-        f_seg = torch.cat(node_seg_list[0:2], dim=1)
-        h_seg = torch.cat([node_seg_list[0]] + node_seg_list[2:4], dim=1)
-        p_seg = torch.cat([node_seg_list[0]] + node_seg_list[4:], dim=1)
-
+        f_seg = []
+        h_seg = []
+        p_seg = []
+        f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list], dim=1))
+        h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list], dim=1))
+        p_seg.append(torch.cat([self.node_seg(node) for node in p_node_list], dim=1))
         f_att_list = list(torch.split(self.softmax(f_seg), 1, dim=1))
         h_att_list = list(torch.split(self.softmax(h_seg), 1, dim=1))
         p_att_list = list(torch.split(self.softmax(p_seg), 1, dim=1))
-
         # gnn infer
         p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map = self.gnn(p_node_list, h_node_list, f_node, xp, f_att_list, h_att_list, p_att_list)
-        # node supervision
-        node_new = torch.cat([f_fea_new] + h_fea_list_new + p_fea_list_new, dim=1)
-        node_seg_new = self.node_cls_final(torch.cat([bg_node, node_new], dim=1))
-        node_seg_list_new = list(torch.split(node_seg_new, 1, dim=1))
-        f_seg_new = torch.cat(node_seg_list_new[0:2], dim=1)
-        h_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[2:4], dim=1)
-        p_seg_new = torch.cat([node_seg_list_new[0]] + node_seg_list_new[4:], dim=1)
+        # node supervision new
+        f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list_new], dim=1))
+        h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list_new], dim=1))
+        p_seg.append(torch.cat([self.node_seg(node) for node in p_node_list_new], dim=1))
 
-        return [p_seg, p_seg_new], [h_seg, h_seg_new,], [f_seg, f_seg_new], [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
+        return p_seg, h_seg, f_seg, [decomp_fh_att_map], [decomp_up_att_map], [decomp_lp_att_map]
 
 
 class Decoder(nn.Module):
@@ -404,7 +384,7 @@ class Decoder(nn.Module):
 
         # infer with hierarchical person graph
         self.gnn_infer = GNN_infer(adj_matrix=self.adj_matrix, upper_half_node=[1, 2, 3, 4], lower_half_node=[5, 6],
-                                   in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2)
+                                   in_dim=256, hidden_dim=32, cls_p=7, cls_h=3, cls_f=2)
         # aux layer
         self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, stride=1, padding=1),
                                        BatchNorm2d(512), nn.ReLU(inplace=False),
