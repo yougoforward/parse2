@@ -249,12 +249,12 @@ class Full_Graph(nn.Module):
         self.hidden = hidden_dim
         self.comp_h = Composition(hidden_dim, parts_num=2)
         self.comp_att = Comp_att(hidden_dim, cls_h-1)
-        self.conv_Update = conv_Update(in_dim, hidden_dim)
+        self.conv_Update = conv_Update(hidden_dim)
 
     def forward(self, f_node_list, h_node_list, p_node_list, xf):
         comp_map_f = self.comp_att(h_node_list[1:])
         comp_h = self.comp_h(f_node_list[1], h_node_list[1:], comp_map_f)
-        f_node_new = self.conv_Update(xf, f_node_list[1], comp_h)
+        f_node_new = self.conv_Update(f_node_list[1], comp_h)
         return [f_node_list[0], f_node_new], comp_map_f
 
 
@@ -275,8 +275,8 @@ class Half_Graph(nn.Module):
         self.comp_u = Composition(hidden_dim, parts_num=self.upper_parts_len)
         self.comp_l = Composition(hidden_dim, parts_num=self.lower_parts_len)
 
-        self.update_u = conv_Update(in_dim, hidden_dim)
-        self.update_l = conv_Update(in_dim, hidden_dim)
+        self.update_u = conv_Update(hidden_dim)
+        self.update_l = conv_Update(hidden_dim)
 
     def forward(self, f_node_list, h_node_list, p_node_list, xh):
         # decomposition full node to half node
@@ -334,7 +334,7 @@ class Part_Graph(nn.Module):
 
         self.part_dp = Dependency(hidden_dim)
 
-        self.node_update_list = nn.ModuleList([conv_Update(in_dim, hidden_dim) for i in range(self.cls_p - 1)])
+        self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
 
     def forward(self, f_node_list, h_node_list, p_node_list, xp):
         # upper half
