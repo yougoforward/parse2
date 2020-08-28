@@ -61,9 +61,9 @@ class Half_Graph(nn.Module):
                                    BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
         self.conv_bg = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
                                    BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-        self.update_u = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
+        self.update_u = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-        self.update_l = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
+        self.update_l = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
 
     def forward(self, f_node_list, h_node_list, p_node_list, xh):

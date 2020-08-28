@@ -12,13 +12,14 @@ BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 from modules.convGRU import ConvGRU
 
 class DecoderModule(nn.Module):
-    
+
     def __init__(self, num_classes):
         super(DecoderModule, self).__init__()
         self.conv0 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
+
     def forward(self, x):
-        out=self.conv0(x)
+        out = self.conv0(x)
         return out
 
 

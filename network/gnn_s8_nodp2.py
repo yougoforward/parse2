@@ -6,8 +6,7 @@ from torch.nn import functional as F
 
 from inplace_abn.bn import InPlaceABNSync
 from modules.com_mod import Bottleneck, ResGridNet, SEModule
-from modules.parse_mod import MagicModule, ASPPModule
-from modules.senet import se_resnext50_32x4d, se_resnet101, senet154
+from modules.parse_mod import ASPPModule
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 # from modules.convGRU import ConvGRU
@@ -475,13 +474,8 @@ class GNN_infer(nn.Module):
                        self.cls_h, self.cls_f)
 
         # node supervision
-        # multi-label classifier
-        self.f_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
-        self.h_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
-        self.p_seg = nn.Sequential(nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
-        self.f_seg_new = nn.Sequential(nn.Conv2d(hidden_dim * cls_f, cls_f, 1, groups=cls_f))
-        self.h_seg_new = nn.Sequential(nn.Conv2d(hidden_dim * cls_h, cls_h, 1, groups=cls_h))
-        self.p_seg_new = nn.Sequential(nn.Conv2d(hidden_dim * cls_p, cls_p, 1, groups=cls_p))
+        self.node_seg = nn.Conv2d(hidden_dim, 1, 1)
+
     def forward(self, xp, xh, xf):
         # gnn inference at stride 8
         # feature transform
@@ -493,28 +487,36 @@ class GNN_infer(nn.Module):
         f_seg = []
         h_seg = []
         p_seg = []
-        # f_seg.append(self.f_seg(torch.cat(f_node_list, dim=1)))
-        # h_seg.append(self.h_seg(torch.cat(h_node_list, dim=1)))
-        # p_seg.append(self.p_seg(torch.cat(p_node_list, dim=1)))
+        f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list], dim=1))
+        h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list], dim=1))
+        p_seg.append(torch.cat([self.node_seg(node) for node in p_node_list], dim=1))
 
         # gnn infer
         p_node_list_new, h_node_list_new, f_node_list_new, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf)
         # node supervision new
-
-        f_seg.append(self.f_seg_new(torch.cat(f_node_list_new, dim=1)))
-        h_seg.append(self.h_seg_new(torch.cat(h_node_list_new, dim=1)))
-        p_seg.append(self.p_seg_new(torch.cat(p_node_list_new, dim=1)))
+        f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list_new], dim=1))
+        h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list_new], dim=1))
+        p_seg.append(torch.cat([self.node_seg(node) for node in p_node_list_new], dim=1))
 
         return p_seg, h_seg, f_seg, [decomp_map_f], [decomp_map_u], [decomp_map_l], [comp_map_f], [comp_map_u], [comp_map_l], [Fdep_att_list]
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
         super(Decoder, self).__init__()
-        # self.layer5 = MagicModule(2048, 512, 1)
         self.layer5 = ASPPModule(2048, 512)
-        self.layer6 = DecoderModule(num_classes)
-        self.layerh = AlphaDecoder(hbody_cls)
-        self.layerf = AlphaDecoder(fbody_cls)
+        self.layer_part = DecoderModule(num_classes)
+        self.layer_half = DecoderModule(hbody_cls)
+        self.layer_full = DecoderModule(fbody_cls)
+
+        self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1),
+                                       BatchNorm2d(256), nn.ReLU(inplace=False),
+                                       nn.Conv2d(256, num_classes, kernel_size=1, stride=1, padding=0, bias=True))
+
+        self.skip = nn.Sequential(nn.Conv2d(512, 512, kernel_size=1, padding=0, bias=False),
+                                   BatchNorm2d(512), nn.ReLU(inplace=False),
+                                   )
+        self.fuse = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, padding=1, bias=False),
+                                   BatchNorm2d(512), nn.ReLU(inplace=False))
         
         # adjacent matrix for pascal person 
         self.adj_matrix = torch.tensor(
@@ -523,7 +525,7 @@ class Decoder(nn.Module):
         
         # infer with hierarchical person graph
         self.gnn_infer = GNN_infer(adj_matrix=self.adj_matrix, upper_half_node=[1, 2, 3, 4], lower_half_node=[5, 6],
-                                   in_dim=256, hidden_dim=64, cls_p=7, cls_h=3, cls_f=2)
+                                   in_dim=256, hidden_dim=32, cls_p=7, cls_h=3, cls_f=2)
         # aux layer
         self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1),
                                        BatchNorm2d(256), nn.ReLU(inplace=False),
@@ -531,12 +533,14 @@ class Decoder(nn.Module):
 
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
+        _,_,h,w = x[1].size()
         context = self.layer5(x[-1])
+        context = F.interpolate(context, size=(h, w), mode='bilinear', align_corners=True)
+        context = self.fuse(torch.cat([self.skip(x[1]), context], dim=1))
 
-        # direct infer
-        p_fea = self.layer6(context, x[1], x[0])
-        h_fea = self.layerh(context, x[1])
-        f_fea = self.layerf(context, x[1])
+        p_fea = self.layer_part(context)
+        h_fea = self.layer_half(context)
+        f_fea = self.layer_full(context)
 
         # gnn infer
         p_seg, h_seg, f_seg, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, \
