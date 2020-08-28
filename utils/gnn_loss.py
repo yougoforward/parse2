@@ -270,7 +270,7 @@ class gnn_loss_dp(nn.Module):
         self.bceloss = torch.nn.BCELoss(reduction='mean')
 
     def forward(self, preds, targets):
-         h, w = targets[0].size(1), targets[0].size(2)
+        h, w = targets[0].size(1), targets[0].size(2)
         # seg loss
         loss=[]
         for i in range(len(preds[0])-1):
