@@ -174,7 +174,7 @@ class Dep_Context(nn.Module):
         query = self.query_conv(torch.cat([hu, coord_fea], dim=1)).view(n, self.hidden_dim+8, -1).permute(0, 2, 1) # n, h*w, hid+8
         key = self.key_conv(torch.cat([p_fea, coord_fea], dim=1)).view(n, self.hidden_dim+8, -1)
         val = self.value_conv(p_fea)
-        
+
         energy = torch.bmm(query, key)  # n,hw,hw
         attention = self.softmax(energy)
 
@@ -240,7 +240,7 @@ class conv_Update(nn.Module):
         #     BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
         #     nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
         #     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
-        # ) 
+        # )
     def forward(self, x, h, message):
         out = self.update(message, h)
         # out = self.update(torch.cat([message, h], dim=1))
@@ -269,39 +269,12 @@ class DecoderModule(nn.Module):
 
     def __init__(self, num_classes):
         super(DecoderModule, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(512), nn.ReLU(inplace=False),
-                                   nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   SEModule(256, reduction=16) 
-                                   )
-        self.alpha = nn.Parameter(torch.ones(1))
+        self.conv0 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False))
 
-    def forward(self, xt, xm, xl):
-        _, _, h, w = xm.size()
-        xt_fea = self.conv1(F.interpolate(xt, size=(h, w), mode='bilinear', align_corners=True) + self.alpha * xm)
-        return xt_fea
-
-class AlphaDecoder(nn.Module):
-    def __init__(self, hbody_cls):
-        super(AlphaDecoder, self).__init__()
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   SEModule(256, reduction=16) 
-                                   )
-                                   
-        self.alpha_hb = nn.Parameter(torch.ones(1))
-
-    def forward(self, x, skip):
-        _, _, h, w = skip.size()
-
-        xup = F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
-        xfuse = xup + self.alpha_hb * skip
-        output = self.conv1(xfuse)
-        return output
-
+    def forward(self, x):
+        out = self.conv0(x)
+        return out
 
 class Full_Graph(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2):
