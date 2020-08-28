@@ -50,7 +50,7 @@ def main():
     # if not os.path.exists(args.save_dir):
     #     os.makedirs(args.save_dir)
 
-    palette = get_lip_palette()
+    palette = get_palette()
     restore_from = args.restore_from
     saved_state_dict = torch.load(restore_from)
     model.load_state_dict(saved_state_dict)
@@ -210,7 +210,7 @@ def get_confusion_matrix_plot(conf_arr):
     plt.savefig('confusion_matrix.png', format='png')
 
 
-def get_lip_palette():
+def get_palette():
     palette = [0, 0, 0,
                128, 0, 0,
                255, 0, 0,
@@ -232,7 +232,6 @@ def get_lip_palette():
                255, 255, 0,
                255, 170, 0]
     return palette
-
 
 if __name__ == '__main__':
     main()

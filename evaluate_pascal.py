@@ -10,7 +10,6 @@ from torch.autograd import Variable
 from torch.utils import data
 
 from dataset.data_pascal import TestGenerator
-# from network.fullfusenet import get_model
 from network.abrnet2 import get_model
 
 
@@ -54,7 +53,7 @@ def main():
     # if not os.path.exists(args.save_dir):
     #     os.makedirs(args.save_dir)
 
-    palette = get_lip_palette()
+    palette = get_palette()
     restore_from = args.restore_from
     saved_state_dict = torch.load(restore_from)
     model.load_state_dict(saved_state_dict)
@@ -217,27 +216,14 @@ def get_confusion_matrix_plot(conf_arr):
     plt.savefig('confusion_matrix.png', format='png')
 
 
-def get_lip_palette():
+def get_palette():
     palette = [0, 0, 0,
                128, 0, 0,
-               255, 0, 0,
-               0, 85, 0,
-               170, 0, 51,
-               255, 85, 0,
-               0, 0, 85,
-               0, 119, 221,
-               85, 85, 0,
-               0, 85, 85,
-               85, 51, 0,
-               52, 86, 128,
                0, 128, 0,
-               0, 0, 255,
-               51, 170, 221,
-               0, 255, 255,
-               85, 255, 170,
-               170, 255, 85,
-               255, 255, 0,
-               255, 170, 0]
+               128, 128, 0,
+               0, 0, 128,
+               128, 0, 128,
+               0, 128, 128]
     return palette
 
 
