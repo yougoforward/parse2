@@ -79,13 +79,8 @@ class Decomp_att(nn.Module):
         self.decomp_map = nn.Sequential(
             nn.Conv2d((parts_num+1)*hidden_dim, parts_num+1, kernel_size=1, padding=0, stride=1, bias=True)
         )
-        # self.decomp_map = nn.Sequential(
-        #     nn.Conv2d(hidden_dim, parts_num+1, kernel_size=1, padding=0, stride=1, bias=True)
-        )
     def forward(self, parent, childs):
         decomp_map = self.decomp_map(torch.cat([parent]+ childs, dim=1))
-        # decomp_map = self.decomp_map(parent)
-
         return decomp_map
 
 
