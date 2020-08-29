@@ -209,9 +209,9 @@ class GNN_infer(nn.Module):
         f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list], dim=1))
         h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list], dim=1))
         p_seg.append(torch.cat([self.node_seg(node) for node in p_node_list], dim=1))
-        f_att_list = list(torch.split(self.softmax(f_seg[0]), 1, dim=1))
-        h_att_list = list(torch.split(self.softmax(h_seg[0]), 1, dim=1))
-        p_att_list = list(torch.split(self.softmax(p_seg[0]), 1, dim=1))
+        f_att_list = list(torch.split(torch.softmax(f_seg[0], 1), 1, dim=1))
+        h_att_list = list(torch.split(torch.softmax(h_seg[0], 1), 1, dim=1))
+        p_att_list = list(torch.split(torch.softmax(p_seg[0], 1), 1, dim=1))
 
         # gnn infer
         p_node_list_new, h_node_list_new, f_node_list_new, decomp_att_fh_new, decomp_att_up_new, decomp_att_lp_new = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf, p_att_list, h_att_list, f_att_list)
