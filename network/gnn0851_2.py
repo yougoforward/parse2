@@ -338,7 +338,6 @@ class GNN_infer(nn.Module):
         f_node_list = list(torch.split(self.f_conv(xf), self.hidden_dim, dim=1))
         h_node_list = list(torch.split(self.h_conv(xh), self.hidden_dim, dim=1))
         p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
-        bg_node = self.bg_conv(torch.cat([xp, xh, xf], dim=1))
         # node supervision
         f_seg = []
         h_seg = []
