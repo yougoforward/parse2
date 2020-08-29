@@ -124,10 +124,10 @@ class Part_Graph(nn.Module):
             if i==0:
                 node = (h_node_list[0] + p_node_list[0])/2
             elif i in self.upper_part_list:
-                decomp = decomp_u_list(self.upper_part_list.index(i))*decomp_att_list_u(self.upper_part_list.index(i))*h_node_att_list[1]
+                decomp = decomp_u_list[self.upper_part_list.index(i)]*decomp_att_list_u[self.upper_part_list.index(i)]*h_node_att_list[1]
                 node = (p_node_list[i]+decomp)/2
             elif i  in self.lower_part_list:
-                decomp = decomp_l_list(self.lower_part_list.index(i))*decomp_att_list_l(self.lower_part_list.index(i))*h_node_att_list[2]
+                decomp = decomp_l_list[self.lower_part_list.index(i)]*decomp_att_list_l[self.lower_part_list.index(i)]*h_node_att_list[2]
                 node = (p_node_list[i]+decomp)/2
 
             p_node_list_new.append(node)
