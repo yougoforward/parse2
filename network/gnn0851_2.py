@@ -174,10 +174,10 @@ class Full_Graph(nn.Module):
         self.comp_h = Composition(hidden_dim)
         self.conv_Update = conv_Update(hidden_dim)
 
-    def forward(self, xf, xh_list, xp_list, f_att_list, h_att_list, p_att_list):
-        comp_h, com_f_att= self.comp_h(xf, xh_list, h_att_list[1:3])
-        xf = self.conv_Update(xf, comp_h)
-        return xf
+    def forward(self, xf_list, xh_list, xp_list, f_att_list, h_att_list, p_att_list):
+        comp_h, com_f_att= self.comp_h(xf_list[1], xh_list, h_att_list[1:3])
+        xf = self.conv_Update(xf_list[1], comp_h)
+        return [xf_list[0], xf]
 
 
 class Half_Graph(nn.Module):
@@ -198,8 +198,8 @@ class Half_Graph(nn.Module):
         self.update_u = conv_Update(hidden_dim)
         self.update_l = conv_Update(hidden_dim)
 
-    def forward(self, xf, xh_list, xp_list, f_att_list, h_att_list, p_att_list):
-        decomp_list, dec_fh_att_list, decomp_att_map = self.decomp_fh_list(xf, xh_list)
+    def forward(self, xf_list, xh_list, xp_list, f_att_list, h_att_list, p_att_list):
+        decomp_list, dec_fh_att_list, decomp_att_map = self.decomp_fh_list(xf_list[1], xh_list)
         # upper half
         upper_parts = []
         for part in self.upper_part_list:
@@ -241,7 +241,7 @@ class Part_Graph(nn.Module):
         self.part_dp = Part_Dependency(in_dim, hidden_dim)
         self.node_update_list = nn.ModuleList([conv_Update(hidden_dim) for i in range(self.cls_p - 1)])
 
-    def forward(self, xf, xh_list, xp_list, xp):
+    def forward(self, xf_list, xh_list, xp_list, xp):
         # upper half
         upper_parts = []
         for part in self.upper_part_list:
@@ -293,13 +293,13 @@ class GNN(nn.Module):
         self.part_infer = Part_Graph(adj_matrix, self.upper_half_node, self.lower_half_node, in_dim, hidden_dim, cls_p,
                                      cls_h, cls_f)
 
-    def forward(self, xp_list, xh_list, xf, xp, f_att_list, h_att_list, p_att_list):
+    def forward(self, xp_list, xh_list, xf_list, xp, f_att_list, h_att_list, p_att_list):
         # for full body node
-        xf_new = self.full_infer(xf, xh_list, xp_list, f_att_list, h_att_list, p_att_list)
+        xf_new = self.full_infer(xf_list, xh_list, xp_list, f_att_list, h_att_list, p_att_list)
         # for half body node
-        xh_list_new, decomp_fh_att_map = self.half_infer(xf, xh_list, xp_list, f_att_list, h_att_list, p_att_list)
+        xh_list_new, decomp_fh_att_map = self.half_infer(xf_list, xh_list, xp_list, f_att_list, h_att_list, p_att_list)
         # for part node
-        xp_list_new, decomp_up_att_map, decomp_lp_att_map = self.part_infer(xf, xh_list, xp_list, xp)
+        xp_list_new, decomp_up_att_map, decomp_lp_att_map = self.part_infer(xf_list, xh_list, xp_list, xp)
 
         return xp_list_new, xh_list_new, xf_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map
 
