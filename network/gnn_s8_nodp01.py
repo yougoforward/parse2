@@ -28,16 +28,14 @@ class Full_Graph(nn.Module):
         self.cls_f = cls_f
         self.comp_full = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
                                    BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-        self.conv_bg = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
-                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
 
-    def forward(self, f_node_list, h_node_list, p_node_list, xf):
+    def forward(self, f_node_list, h_node_list, p_node_list, xf, h_node_att_list):
         f_node_list_new = []
         for i in range(self.cls_f):
             if i==0:
-                node = self.conv_bg(torch.cat([f_node_list[0], h_node_list[0]], dim=1))
+                node = 0.5*(f_node_list[0] + h_node_list[0])
             elif i==1:
-                node = self.comp_full(torch.cat([f_node_list[1], h_node_list[1]+h_node_list[2]], dim=1))
+                node = 0.5*(f_node_list[1] + sum(h_node_list[1:])*sum(h_node_att_list[1:]))
             f_node_list_new.append(node)
 
         return f_node_list_new
@@ -51,45 +49,48 @@ class Half_Graph(nn.Module):
         self.lower_part_list = lower_part_list
         self.upper_parts_len = len(upper_part_list)
         self.lower_parts_len = len(lower_part_list)
-        self.decomp_u = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
+        self.decomp_u = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-        self.decomp_l = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
+        self.decomp_l = nn.Sequential(nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-        self.comp_u = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
-                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-        self.comp_l = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
-                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-        self.conv_bg = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
-                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-        self.update_u = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, bias=False),
-                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-        self.update_l = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, bias=False),
-                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+        self.decomp_att = nn.Sequential(nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, bias=True))
 
-    def forward(self, f_node_list, h_node_list, p_node_list, xh):
+    def forward(self, f_node_list, h_node_list, p_node_list, xh, f_node_att_list, p_node_att_list):
         upper_parts = []
+        upper_parts_att = []
         for part in self.upper_part_list:
             upper_parts.append(p_node_list[part])
+            upper_parts_att.append(p_node_att_list[part])
 
         lower_parts = []
+        lower_parts_att = []
         for part in self.lower_part_list:
             lower_parts.append(p_node_list[part])
+            lower_parts_att.append(p_node_att_list[part])
 
         h_node_list_new = []
+        decomp_u = self.decomp_u(f_node_att_list[1]*xh)
+        decomp_u_att = self.decomp_att(decomp_u)
+        decomp_l = self.decomp_l(f_node_att_list[1]*xh)
+        decomp_l_att = self.decomp_att(decomp_l)
+        decomp_att = torch.cat([decomp_u_att, decomp_l_att], dim=1)
+        decomp_att_list = torch.split(torch.softmax(decomp_att, 1), 1, 1)
+
         for i in range(self.cls_h):
             if i==0:
-                node = self.conv_bg(torch.cat([h_node_list[0], f_node_list[0]+p_node_list[0]], dim=1))
+                node = (h_node_list[0]+ f_node_list[0]+p_node_list[0])/3
             elif i==1:
-                comp = self.comp_u(torch.cat([sum(upper_parts), h_node_list[1]], dim=1))
-                decomp = self.decomp_u(torch.cat([f_node_list[1], h_node_list[1]], dim=1))
-                node = self.update_u(torch.cat([h_node_list[1], comp+decomp], dim=1))
+                comp = sum(upper_parts)*sum(upper_parts_att)
+                
+                decomp = decomp_u*decomp_att_list[0]*f_node_att_list[1]
+                node = (h_node_list[1] + comp + decomp)/3
             elif i==2:
-                comp = self.comp_l(torch.cat([sum(lower_parts), h_node_list[2]], dim=1))
-                decomp = self.decomp_l(torch.cat([f_node_list[1], h_node_list[2]], dim=1))
-                node = self.update_u(torch.cat([h_node_list[2], comp+decomp], dim=1))
+                comp = sum(lower_parts)*sum(lower_parts_att)
+                decomp = decomp_l*decomp_att_list[1]*f_node_att_list[1]
+                node = (h_node_list[2] + comp + decomp)/3
             h_node_list_new.append(node)
 
-        return h_node_list_new
+        return h_node_list_new, decomp_att
 
 
 class Part_Graph(nn.Module):
@@ -100,23 +101,36 @@ class Part_Graph(nn.Module):
         self.upper_part_list = upper_part_list
         self.lower_part_list = lower_part_list
 
-        self.decomp_half = nn.ModuleList([nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
-                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)) for i in range(self.cls_p-1)])
-        self.conv_bg = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
+        self.decomp_u = nn.Sequential(nn.Conv2d(in_dim, hidden_dim*len(self.upper_part_list), kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
-    def forward(self, f_node_list, h_node_list, p_node_list, xp):
+        self.decomp_l = nn.Sequential(nn.Conv2d(in_dim, hidden_dim*len(self.lower_part_list), kernel_size=1, padding=0, bias=False),
+                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)) 
+        self.decomp_att = nn.Sequential(nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, bias=True))
+
+    def forward(self, f_node_list, h_node_list, p_node_list, xp, h_node_att_list):
         p_node_list_new = []
+        decomp_u_list = torch.split(self.decomp_u(h_node_att_list[1]*xp), self.hidden, 1)
+        decomp_u_att_list = [self.decomp_att(node) for node in decomp_u_list]
+        decomp_u_att = torch.cat(decomp_u_att_list, dim=1)
+        decomp_att_list_u = torch.split(torch.softmax(decomp_u_att, 1), 1, 1)
+
+        decomp_l_list = torch.split(self.decomp_l(h_node_att_list[2]*xp), self.hidden, 1)
+        decomp_l_att_list = [self.decomp_att(node) for node in decomp_l_list]
+        decomp_l_att = torch.cat(decomp_l_att_list, dim=1)
+        decomp_att_list_l = torch.split(torch.softmax(decomp_l_att, 1), 1, 1)
+
         for i in range(self.cls_p):
             if i==0:
-                node = self.conv_bg(torch.cat([h_node_list[0], p_node_list[0]], dim=1))
+                node = (h_node_list[0] + p_node_list[0])/2
             elif i in self.upper_part_list:
-                node = self.decomp_half[i-1](torch.cat([h_node_list[1], p_node_list[i]], dim=1))
-
+                decomp = decomp_u_list(self.upper_part_list.index(i))*decomp_att_list_u(self.upper_part_list.index(i))*h_node_att_list[1]
+                node = (p_node_list[i]+decomp)/2
             elif i  in self.lower_part_list:
-                node = self.decomp_half[i-1](torch.cat([h_node_list[2], p_node_list[i]], dim=1))
+                decomp = decomp_l_list(self.lower_part_list.index(i))*decomp_att_list_l(self.lower_part_list.index(i))*h_node_att_list[2]
+                node = (p_node_list[i]+decomp)/2
 
             p_node_list_new.append(node)
-        return p_node_list_new
+        return p_node_list_new, decomp_u_att, decomp_l_att
 
 
 class GNN(nn.Module):
@@ -139,15 +153,15 @@ class GNN(nn.Module):
         self.part_infer = Part_Graph(adj_matrix, self.upper_half_node, self.lower_half_node, in_dim, hidden_dim, cls_p,
                                      cls_h, cls_f)
 
-    def forward(self, p_node_list, h_node_list, f_node_list, xp, xh, xf):
+    def forward(self, p_node_list, h_node_list, f_node_list, xp, xh, xf, p_node_att_list, h_node_att_list, f_node_att_list):
         # for full body node
-        f_node_new_list = self.full_infer(f_node_list, h_node_list, p_node_list, xf)
+        f_node_new_list = self.full_infer(f_node_list, h_node_list, p_node_list, xf, h_node_att_list)
         # for half body node
-        h_node_list_new = self.half_infer(f_node_list, h_node_list, p_node_list, xh)
+        h_node_list_new, decomp_att_fh = self.half_infer(f_node_list, h_node_list, p_node_list, xh, f_node_att_list, p_node_att_list)
         # for part node
-        p_node_list_new = self.part_infer(f_node_list, h_node_list, p_node_list, xp)
+        p_node_list_new, decomp_att_up, decomp_att_lp = self.part_infer(f_node_list, h_node_list, p_node_list, xp, h_node_att_list)
 
-        return p_node_list_new, h_node_list_new, f_node_new_list
+        return p_node_list_new, h_node_list_new, f_node_new_list, decomp_att_fh, decomp_att_up, decomp_att_lp
 
 class GNN_infer(nn.Module):
     def __init__(self, adj_matrix, upper_half_node=[1, 2, 3, 4], lower_half_node=[5, 6], in_dim=256, hidden_dim=64,
@@ -188,16 +202,26 @@ class GNN_infer(nn.Module):
         f_seg = []
         h_seg = []
         p_seg = []
+        decomp_att_fh = []
+        decomp_att_up = []
+        decomp_att_lp = []
+
         f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list], dim=1))
         h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list], dim=1))
         p_seg.append(torch.cat([self.node_seg(node) for node in p_node_list], dim=1))
+        f_att_list = list(torch.split(self.softmax(f_seg[0]), 1, dim=1))
+        h_att_list = list(torch.split(self.softmax(h_seg[0]), 1, dim=1))
+        p_att_list = list(torch.split(self.softmax(p_seg[0]), 1, dim=1))
 
         # gnn infer
-        p_node_list_new, h_node_list_new, f_node_list_new = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf)
+        p_node_list_new, h_node_list_new, f_node_list_new, decomp_att_fh_new, decomp_att_up_new, decomp_att_lp_new = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf, p_att_list, h_att_list, f_att_list)
         # node supervision new
         f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list_new], dim=1))
         h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list_new], dim=1))
         p_seg.append(torch.cat([self.node_seg(node) for node in p_node_list_new], dim=1))
+        decomp_att_fh.append(decomp_att_fh_new)
+        decomp_att_up.append(decomp_att_up_new)
+        decomp_att_lp.append(decomp_att_lp_new)
 
         return p_seg, h_seg, f_seg
 
