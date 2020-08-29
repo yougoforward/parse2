@@ -137,7 +137,7 @@ class Dep_Context(nn.Module):
         for i in range(len(hu_att_list)):
             norm_att = torch.softmax(hu_att_list[i].view(n,1,-1), dim=-1).permute(0,2,1) #n,hw,1
             hu_center = torch.bmm(p_fea.view(n,c,-1),norm_att) #n,c,1
-            coord_center = torch.bmm(coord_fea.view(n,c,-1),norm_att) #n,c,1
+            coord_center = torch.bmm(coord_fea.view(n,8,-1),norm_att) #n,8,1
 
             query = self.query_conv(torch.cat([hu_center, coord_center], dim=1)).view(n, 64, -1).permute(0, 2, 1) # n, 1, 64
         
