@@ -349,7 +349,7 @@ class GNN_infer(nn.Module):
         h_att_list = list(torch.split(self.softmax(h_seg[0]), 1, dim=1))
         p_att_list = list(torch.split(self.softmax(p_seg[0]), 1, dim=1))
         # gnn infer
-        p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map = self.gnn(p_node_list, h_node_list, f_node, xp, f_att_list, h_att_list, p_att_list)
+        p_fea_list_new, h_fea_list_new, f_fea_new, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map = self.gnn(p_node_list, h_node_list, f_node_list, xp, f_att_list, h_att_list, p_att_list)
         # node supervision new
         f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list_new], dim=1))
         h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list_new], dim=1))
