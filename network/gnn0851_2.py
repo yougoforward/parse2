@@ -402,7 +402,7 @@ class Decoder(nn.Module):
         f_fea = self.layer_full(context)
 
         # gnn infer
-        p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map = self.gnn_infer(x_fea, alpha_hb_fea, alpha_fb_fea, x[0])
+        p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map = self.gnn_infer(p_fea, h_fea, f_fea, x[0])
         return p_seg, h_seg, f_seg, decomp_fh_att_map, decomp_up_att_map, decomp_lp_att_map, x_dsn
 
 
