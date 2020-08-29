@@ -39,6 +39,7 @@ class gnn_loss_noatt(nn.Module):
         loss=[]
         for i in range(len(preds[0])-1):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss.append(self.criterion(pred, targets[0]))
             pred = F.softmax(input=pred, dim=1)
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
 
@@ -115,6 +116,7 @@ class gnn_loss(nn.Module):
         loss=[]
         for i in range(len(preds[0])-1):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss.append(self.criterion(pred, targets[0]))
             pred = F.softmax(input=pred, dim=1)
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
 
@@ -275,6 +277,7 @@ class gnn_loss2(nn.Module):
         loss=[]
         for i in range(len(preds[0])-1):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss.append(self.criterion(pred, targets[0]))
             pred = F.softmax(input=pred, dim=1)
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
 
