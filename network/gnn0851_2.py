@@ -218,7 +218,7 @@ class Half_Graph(nn.Module):
         message_l = decomp_list[1] + comp_l
         xh_l = self.update_l(xh_list[1], message_l)
 
-        xh_list_new = [xh_u, xh_l]
+        xh_list_new = [xh_list[0], xh_u, xh_l]
         return xh_list_new, decomp_att_map
 
 
@@ -259,7 +259,7 @@ class Part_Graph(nn.Module):
         #     xpp_list_list[self.edge_index[i, 1]].append(
         #         self.part_dp(F_dep_list[self.edge_index[i, 0]], xp_list[self.edge_index[i, 1]]))
 
-        xp_list_new = []
+        xp_list_new = [xp_list[0]]
         for i in range(self.cls_p - 1):
             if i + 1 in self.upper_part_list:
                 # message = decomp_pu_list[self.upper_part_list.index(i + 1)] + sum(xpp_list_list[i])
