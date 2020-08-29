@@ -80,9 +80,9 @@ class Decomp_att(nn.Module):
         #     nn.Conv2d((parts_num+1)*hidden_dim, parts_num+1, kernel_size=1, padding=0, stride=1, bias=True)
         # )
         self.decomp_map = nn.Sequential(
-            nn.Conv2d((parts+1)*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=True),
+            nn.Conv2d((parts_num+1)*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=True),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, parts+1, kernel_size=1, padding=0, stride=1, bias=True)
+            nn.Conv2d(hidden_dim, parts_num+1, kernel_size=1, padding=0, stride=1, bias=True)
         )
     def forward(self, parent, childs):
         decomp_map = self.decomp_map(torch.cat([parent]+ childs, dim=1))
