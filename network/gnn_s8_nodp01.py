@@ -221,8 +221,8 @@ class GNN_infer(nn.Module):
         # gnn infer
         p_node_list_new, h_node_list_new, f_node_list_new, decomp_att_fh_new, decomp_att_up_new, decomp_att_lp_new = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf, p_att_list, h_att_list, f_att_list)
         # node supervision new
-        f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list_new], dim=1))
-        h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list_new], dim=1))
+        # f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list_new], dim=1))
+        # h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list_new], dim=1))
         p_seg.append(torch.cat([self.node_seg(node) for node in p_node_list_new], dim=1))
         decomp_att_fh.append(decomp_att_fh_new)
         decomp_att_up.append(decomp_att_up_new)
