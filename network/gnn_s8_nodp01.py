@@ -74,7 +74,7 @@ class Half_Graph(nn.Module):
         decomp_l = self.decomp_l(f_node_att_list[1]*xh)
         decomp_l_att = self.decomp_att(decomp_l)
         decomp_att = torch.cat([decomp_u_att, decomp_l_att], dim=1)
-        decomp_att_list = torch.split(torch.softmax(decomp_att, 1), 1, 1)
+        decomp_att_list = list(torch.split(torch.softmax(decomp_att, 1), 1, 1))
 
         for i in range(self.cls_h):
             if i==0:
@@ -113,12 +113,12 @@ class Part_Graph(nn.Module):
         decomp_u_list = torch.split(self.decomp_u(h_node_att_list[1]*xp), self.hidden, 1)
         decomp_u_att_list = [self.decomp_att(node) for node in decomp_u_list]
         decomp_u_att = torch.cat(decomp_u_att_list, dim=1)
-        decomp_att_list_u = torch.split(torch.softmax(decomp_u_att, 1), 1, 1)
+        decomp_att_list_u = list(torch.split(torch.softmax(decomp_u_att, 1), 1, 1))
 
         decomp_l_list = torch.split(self.decomp_l(h_node_att_list[2]*xp), self.hidden, 1)
         decomp_l_att_list = [self.decomp_att(node) for node in decomp_l_list]
         decomp_l_att = torch.cat(decomp_l_att_list, dim=1)
-        decomp_att_list_l = torch.split(torch.softmax(decomp_l_att, 1), 1, 1)
+        decomp_att_list_l = list(torch.split(torch.softmax(decomp_l_att, 1), 1, 1))
 
         for i in range(self.cls_p):
             if i==0:
