@@ -98,6 +98,7 @@ class Part_Graph(nn.Module):
                  cls_p=7, cls_h=3, cls_f=2):
         super(Part_Graph, self).__init__()
         self.cls_p = cls_p
+        self.hidden = hidden_dim
         self.upper_part_list = upper_part_list
         self.lower_part_list = lower_part_list
 
