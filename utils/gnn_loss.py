@@ -290,7 +290,7 @@ class gnn_loss2(nn.Module):
         # #aaf loss
         # aaf_loss = self.aaf_loss(pred, targets[0])
         #ce loss
-        print(pred0.size())
+        # print(pred0.size())
         loss_ce = self.criterion(pred0, targets[0])
         loss.append(loss_ce)
         # loss = loss + lovasz_loss + aaf_loss + loss_ce
