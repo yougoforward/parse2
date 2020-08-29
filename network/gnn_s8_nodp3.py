@@ -318,7 +318,7 @@ class Part_Graph(nn.Module):
             xpp_list_list[self.edge_index[i, 1]].append(
                 self.part_dp(p_node_list[self.edge_index[i, 1]], 
                 F_dep_list[self.edge_index[i, 0]], 
-                att_list_list[self.edge_index[i, 0]][1+self.part_list_list[self.edge_index[i, 0]].index(self.edge_index[i, 1])]))
+                att_list_list[self.edge_index[i, 0]][self.part_list_list[self.edge_index[i, 0]].index(self.edge_index[i, 1])]))
         
         xp_list_new = [p_node_list[0]]
         for i in range(self.cls_p - 1):
