@@ -199,7 +199,7 @@ class Half_Graph(nn.Module):
         self.update_l = conv_Update(hidden_dim)
 
     def forward(self, xf_list, xh_list, xp_list, f_att_list, h_att_list, p_att_list):
-        decomp_list, dec_fh_att_list, decomp_att_map = self.decomp_fh_list(xf_list[1], xh_list)
+        decomp_list, dec_fh_att_list, decomp_att_map = self.decomp_fh_list(xf_list[1], xh_list[1:])
         # upper half
         upper_parts = []
         for part in self.upper_part_list:
@@ -245,11 +245,11 @@ class Part_Graph(nn.Module):
         # upper half
         upper_parts = []
         for part in self.upper_part_list:
-            upper_parts.append(xp_list[part - 1])
+            upper_parts.append(xp_list[part])
         # lower half
         lower_parts = []
         for part in self.lower_part_list:
-            lower_parts.append(xp_list[part - 1])
+            lower_parts.append(xp_list[part])
         decomp_pu_list, dec_up_att_list, decomp_pu_att_map  = self.decomp_hpu_list(xh_list[0], upper_parts)
         decomp_pl_list, dec_lp_att_list, decomp_pl_att_map = self.decomp_hpl_list(xh_list[1], lower_parts)
 
