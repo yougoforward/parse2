@@ -55,7 +55,7 @@ class gnn_loss_noatt(nn.Module):
         loss.append(loss_ce)
         # loss = loss + lovasz_loss + aaf_loss + loss_ce
         # loss = loss + lovasz_loss + loss_ce
-        loss = sum(loss)
+        loss = sum(loss)*0.4+0.6*(loss_ce+lovasz_loss)
 
 
         # half body
