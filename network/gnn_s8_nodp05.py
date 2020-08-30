@@ -10,7 +10,45 @@ from modules.parse_mod import MagicModule, ASPPModule
 from modules.senet import se_resnext50_32x4d, se_resnet101, senet154
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
-# from modules.convGRU import ConvGRU
+class ConvGRU(nn.Module):
+    def __init__(self, input_dim, hidden_dim, kernel_size):
+        super(ConvGRU, self).__init__()
+        self.padding = kernel_size[0] // 2, kernel_size[1] // 2
+        self.hidden_dim = hidden_dim
+        self.conv_gates = nn.Conv2d(input_dim + hidden_dim, 2, kernel_size=1, padding=0, stride=1, bias=True)
+        self.conv_can = nn.Sequential(
+            nn.Conv2d(input_dim + hidden_dim, hidden_dim, kernel_size=kernel_size, padding=self.padding, stride=1, bias=False),
+            InPlaceABNSync(hidden_dim)
+        )
+
+        nn.init.orthogonal_(self.conv_gates.weight)
+        nn.init.constant_(self.conv_gates.bias, 0.)
+
+    def forward(self, input_tensor, h_cur):
+        """
+        :param self:
+        :param input_tensor: (b, c, h, w)
+            input is actually the target_model
+        :param h_cur: (b, c_hidden, h, w)
+            current hidden and cell states respectively
+        :return: h_next,
+            next hidden state
+        """
+        combined = torch.cat([input_tensor, h_cur], dim=1)
+        combined_conv = self.conv_gates(combined)
+
+        gamma, beta = torch.split(combined_conv, 1, dim=1)
+        reset_gate = torch.sigmoid(gamma)
+        update_gate = torch.sigmoid(beta)
+
+        combined = torch.cat([input_tensor, reset_gate*h_cur], dim=1)
+        cc_cnm = self.conv_can(combined)
+        cnm = torch.tanh(cc_cnm)
+
+        h_next = (1 - update_gate) * h_cur + update_gate * cnm
+        return h_next
+
+
 class DecoderModule(nn.Module):
 
     def __init__(self, num_classes):
@@ -108,6 +146,7 @@ class Part_Graph(nn.Module):
         self.decomp_att = nn.Sequential(nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, bias=True))
         self.update = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+        self.update = nn.ModuleList([ConvGRU(hidden_dim, hidden_dim, (1,1)) for i in range(cls_p)
 
     def forward(self, f_node_list, h_node_list, p_node_list, xp, h_node_att_list):
         p_node_list_new = []
@@ -123,13 +162,13 @@ class Part_Graph(nn.Module):
 
         for i in range(self.cls_p):
             if i==0:
-                node = self.update(torch.cat([p_node_list[0], h_node_list[0]], dim=1))
+                node = self.update[i](h_node_list[0], p_node_list[0])
             elif i in self.upper_part_list:
                 decomp = decomp_u_list[self.upper_part_list.index(i)]
-                node = self.update(torch.cat([p_node_list[i], decomp], dim=1))
+                node = self.update[i](decomp, p_node_list[i])
             elif i  in self.lower_part_list:
                 decomp = decomp_l_list[self.lower_part_list.index(i)]
-                node = self.update(torch.cat([p_node_list[i], decomp], dim=1))
+                node = self.update[i](decomp, p_node_list[i])
 
             p_node_list_new.append(node)
         return p_node_list_new, [], []
