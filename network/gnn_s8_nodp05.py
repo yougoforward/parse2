@@ -123,7 +123,7 @@ class Part_Graph(nn.Module):
 
         for i in range(self.cls_p):
             if i==0:
-                node = self.update(torch.cat([p_node_list[0]+h_node_list[0]], dim=1))
+                node = self.update(torch.cat([p_node_list[0], h_node_list[0]], dim=1))
             elif i in self.upper_part_list:
                 decomp = decomp_u_list[self.upper_part_list.index(i)]
                 node = self.update(torch.cat([p_node_list[i], decomp], dim=1))
