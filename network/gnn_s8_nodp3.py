@@ -172,12 +172,16 @@ class Contexture(nn.Module):
 class Dependency(nn.Module):
     def __init__(self, hidden_dim=10):
         super(Dependency, self).__init__()
+        self.project = nn.Sequential(
+            nn.Conv2d(256, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+        )
         self.relation = nn.Sequential(
-            nn.Conv2d(256+ hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
     def forward(self, hv, hu_context, dep_att_huv):
-        dep_message = self.relation(torch.cat([hu_context*dep_att_huv, hv], dim=1))
+        dep_message = self.relation(torch.cat([self.project(hu_context*dep_att_huv), hv], dim=1))
         return dep_message
 
 

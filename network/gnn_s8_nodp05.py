@@ -144,8 +144,8 @@ class Part_Graph(nn.Module):
         self.decomp_l = nn.Sequential(nn.Conv2d(in_dim+hidden_dim, hidden_dim*len(self.lower_part_list), kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(hidden_dim*len(self.lower_part_list)), nn.ReLU(inplace=False)) 
         self.decomp_att = nn.Sequential(nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, bias=True))
-        self.update = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, bias=False),
-                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+        # self.update = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, bias=False),
+        #                            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
         self.update = nn.ModuleList([ConvGRU(hidden_dim, hidden_dim, (1,1)) for i in range(cls_p)
 
     def forward(self, f_node_list, h_node_list, p_node_list, xp, h_node_att_list):
