@@ -47,15 +47,15 @@ class gnn_loss_noatt(nn.Module):
         pred = F.softmax(input=pred0, dim=1)
         #lovasz loss
         lovasz_loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
-        loss.append(lovasz_loss)
+        loss.append(0.5*lovasz_loss)
         # #aaf loss
         # aaf_loss = self.aaf_loss(pred, targets[0])
         #ce loss
         loss_ce = self.criterion(pred0, targets[0])
-        loss.append(loss_ce)
+        loss.append(0.5*loss_ce)
         # loss = loss + lovasz_loss + aaf_loss + loss_ce
         # loss = loss + lovasz_loss + loss_ce
-        loss = sum(loss)*0.4+0.6*(loss_ce+lovasz_loss)
+        loss = sum(loss)
 
 
         # half body
