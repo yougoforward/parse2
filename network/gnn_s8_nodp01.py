@@ -167,7 +167,7 @@ class Part_Graph(nn.Module):
 
         self.decomp = Decomposition(hidden_dim)
         self.decomp_att = nn.Sequential(nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, bias=True))
-        self.update = nn.ModuleList([ConvGRU(hidden_dim,hidden_dim,(1,1)) for i in range(cls_p))])
+        self.update = nn.ModuleList([ConvGRU(hidden_dim,hidden_dim,(1,1)) for i in range(cls_p)])
 
     def forward(self, f_node_list, h_node_list, p_node_list, xp, h_node_att_list):
         # upper half
