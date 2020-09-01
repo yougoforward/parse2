@@ -65,7 +65,7 @@ class Decomposition(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, child_num=2):
         super(Decomposition, self).__init__()
         self.decomp_att = nn.Sequential(
-            nn.Conv2d(in_dim+1, in_dim, kernel_size=3, padding=1, stride=1, bias=True),True
+            nn.Conv2d(in_dim+1, in_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(in_dim), nn.ReLU(inplace=False),
             nn.Conv2d(in_dim, child_num, kernel_size=1, padding=0, stride=1, bias=True)
         )
