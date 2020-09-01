@@ -62,23 +62,21 @@ class DecoderModule(nn.Module):
 
 
 class Decomposition(nn.Module):
-    def __init__(self, hidden_dim=10, child_num=2):
+    def __init__(self, in_dim=256, hidden_dim=10, child_num=2):
         super(Decomposition, self).__init__()
         self.decomp_att = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True)
+            nn.Conv2d(in_dim+1, in_dim, kernel_size=3, padding=1, stride=1, bias=False),
+            BatchNorm2d(in_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(in_dim, child_num, kernel_size=1, padding=0, stride=1, bias=True)
         )
 
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
 
-    def forward(self, parent, child_list, parent_att):
-        decomp_map = torch.cat([self.decomp_att(torch.cat([parent, child], dim=1)) for child in child_list], dim=1)
+    def forward(self, parent, child_list, parent_att, child_fea):
+        decomp_map = self.decomp_att(torch.cat([parent_att, child_fea], dim=1))
         decomp_att = torch.softmax(decomp_map, dim=1)
         decomp_att_list = torch.split(decomp_att, 1, dim=1)
         decomp_list = [self.relation(torch.cat([parent * decomp_att_list[i]*parent_att, child_list[i]], dim=1)) for i in
@@ -165,7 +163,9 @@ class Part_Graph(nn.Module):
         self.upper_part_list = upper_part_list
         self.lower_part_list = lower_part_list
 
-        self.decomp = Decomposition(hidden_dim)
+        self.decomp_u = Decomposition(in_dim, hidden_dim, len(upper_part_list))
+        self.decomp_l = Decomposition(in_dim, hidden_dim, len(lower_part_list))
+
         self.decomp_att = nn.Sequential(nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, bias=True))
         self.update = nn.ModuleList([ConvGRU(hidden_dim,hidden_dim,(1,1)) for i in range(cls_p)])
 
@@ -180,8 +180,8 @@ class Part_Graph(nn.Module):
             lower_parts.append(p_node_list[part])
 
         p_node_list_new = []
-        decomp_u_list, decomp_u_att = self.decomp(h_node_list[1], upper_parts, h_node_att_list[1])
-        decomp_l_list, decomp_l_att = self.decomp(h_node_list[2], lower_parts, h_node_att_list[2])
+        decomp_u_list, decomp_u_att = self.decomp_u(h_node_list[1], upper_parts, h_node_att_list[1],xp)
+        decomp_l_list, decomp_l_att = self.decomp_l(h_node_list[2], lower_parts, h_node_att_list[2],xp)
 
         for i in range(self.cls_p):
             if i==0:
