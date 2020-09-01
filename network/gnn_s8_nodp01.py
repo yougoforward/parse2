@@ -163,7 +163,9 @@ class Part_Graph(nn.Module):
         self.upper_part_list = upper_part_list
         self.lower_part_list = lower_part_list
 
-        self.decomp = Decomposition(hidden_dim)
+        self.decomp_u = Decomposition(in_dim, hidden_dim, len(upper_part_list))
+        self.decomp_l = Decomposition(in_dim, hidden_dim, len(lower_part_list))
+
         self.decomp_att = nn.Sequential(nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, bias=True))
         self.update = nn.ModuleList([ConvGRU(hidden_dim,hidden_dim,(1,1)) for i in range(cls_p)])
 
@@ -178,8 +180,8 @@ class Part_Graph(nn.Module):
             lower_parts.append(p_node_list[part])
 
         p_node_list_new = []
-        decomp_u_list, decomp_u_att = self.decomp(h_node_list[1], upper_parts, h_node_att_list[1])
-        decomp_l_list, decomp_l_att = self.decomp(h_node_list[2], lower_parts, h_node_att_list[2])
+        decomp_u_list, decomp_u_att = self.decomp_u(h_node_list[1], upper_parts, h_node_att_list[1],xp)
+        decomp_l_list, decomp_l_att = self.decomp_l(h_node_list[2], lower_parts, h_node_att_list[2],xp)
 
         for i in range(self.cls_p):
             if i==0:
