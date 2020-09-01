@@ -54,7 +54,7 @@ class gnn_loss_noatt(nn.Module):
         loss_ce = self.criterion(pred0, targets[0])
         # loss.append(0.5*loss_ce)
         # loss = loss + lovasz_loss + aaf_loss + loss_ce
-        loss_final = 0.5*(lovasz_loss + loss_ce)
+        loss_final = (lovasz_loss + loss_ce)
         loss = sum(loss)
 
 
