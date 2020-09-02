@@ -294,7 +294,9 @@ class GNN_infer(nn.Module):
         decomp_att_up.append(decomp_att_up_new)
         decomp_att_lp.append(decomp_att_lp_new)
 
-        return p_seg, h_seg, f_seg
+        # return p_seg, h_seg, f_seg
+        return [sum(p_seg)], [sum(h_seg)], [sum(f_seg)]
+
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
