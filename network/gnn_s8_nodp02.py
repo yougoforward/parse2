@@ -225,8 +225,9 @@ class GNN(nn.Module):
         # h_node_list_new, decomp_att_fh = self.half_infer(f_node_list, h_node_list, p_node_list, xh, f_node_att_list, p_node_att_list)
         # for part node
         p_node_list_new, decomp_att_up, decomp_att_lp = self.part_infer(f_node_list, h_node_list, p_node_list, xp, h_node_att_list)
+        # return p_node_list_new, h_node_list_new, f_node_new_list, decomp_att_fh, decomp_att_up, decomp_att_lp
 
-        return p_node_list_new, h_node_list_new, f_node_new_list, decomp_att_fh, decomp_att_up, decomp_att_lp
+        return p_node_list_new, h_node_list_new, f_node_new_list, decomp_att_up, decomp_att_lp
 
 class GNN_infer(nn.Module):
     def __init__(self, adj_matrix, upper_half_node=[1, 2, 3, 4], lower_half_node=[5, 6], in_dim=256, hidden_dim=64,
@@ -279,16 +280,16 @@ class GNN_infer(nn.Module):
         p_att_list = list(torch.split(torch.softmax(p_seg[0], 1), 1, dim=1))
 
         # gnn infer
-        p_node_list_new, h_node_list_new, f_node_list_new, decomp_att_fh_new, decomp_att_up_new, decomp_att_lp_new = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf, p_att_list, h_att_list, f_att_list)
+        p_node_list_new, h_node_list_new, f_node_list_new, decomp_att_up_new, decomp_att_lp_new = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf, p_att_list, h_att_list, f_att_list)
         # node supervision new
         # f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list_new], dim=1))
         # h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list_new], dim=1))
         p_seg.append(torch.cat([self.node_seg(node) for node in p_node_list_new], dim=1))
-        decomp_att_fh.append(decomp_att_fh_new)
+        # decomp_att_fh.append(decomp_att_fh_new)
         decomp_att_up.append(decomp_att_up_new)
         decomp_att_lp.append(decomp_att_lp_new)
 
-        return [sum(p_seg)], [sum(h_seg)], [sum(f_seg)], decomp_att_fh, decomp_att_up, decomp_att_lp
+        return [sum(p_seg)], [sum(h_seg)], [sum(f_seg)], decomp_att_up, decomp_att_lp
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
@@ -333,9 +334,9 @@ class Decoder(nn.Module):
         f_fea = self.layer_full(context)
 
         # gnn infer
-        p_seg, h_seg, f_seg, decomp_att_fh, decomp_att_up, decomp_att_lp = self.gnn_infer(p_fea, h_fea, f_fea)
+        p_seg, h_seg, f_seg, decomp_att_up, decomp_att_lp = self.gnn_infer(p_fea, h_fea, f_fea)
 
-        return p_seg, h_seg, f_seg, decomp_att_fh, decomp_att_up, decomp_att_lp, x_dsn
+        return p_seg, h_seg, f_seg, decomp_att_up, decomp_att_lp, x_dsn
 
 class OCNet(nn.Module):
     def __init__(self, block, layers, num_classes):
