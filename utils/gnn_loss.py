@@ -402,7 +402,7 @@ class gnn_loss3(nn.Module):
         self.ignore_index = ignore_index
         self.only_present = only_present
         self.weight = torch.FloatTensor([0.82877791, 0.95688253, 0.94921949, 1.00538108, 1.0201687,  1.01665831, 1.05470914])
-        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
+        self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=None)
         self.criterion2 = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=None)
 
         self.upper_part_list = upper_part_list
@@ -510,8 +510,8 @@ class gnn_loss3(nn.Module):
         targets_up = targets_up.argmax(dim=1, keepdim=False)
         targets_up[upper_bg_node == 1] = self.ignore_index
         loss_up_att = []
-        for i in range(len(preds[4])):
-            pred_up = F.interpolate(input=preds[4][i], size=(h, w), mode='bilinear', align_corners=True)
+        for i in range(len(preds[-3])):
+            pred_up = F.interpolate(input=preds[-3][i], size=(h, w), mode='bilinear', align_corners=True)
             loss_up_att.append(self.criterion2(pred_up, targets_up))
         loss_up_att = sum(loss_up_att)
 
@@ -524,8 +524,8 @@ class gnn_loss3(nn.Module):
         targets_lp = targets_lp.argmax(dim=1,keepdim=False)
         targets_lp[lower_bg_node==1]=self.ignore_index
         loss_lp_att = []
-        for i in range(len(preds[5])):
-            pred_lp = F.interpolate(input=preds[5][i], size=(h, w), mode='bilinear', align_corners=True)
+        for i in range(len(preds[-2])):
+            pred_lp = F.interpolate(input=preds[-2][i], size=(h, w), mode='bilinear', align_corners=True)
             loss_lp_att.append(self.criterion2(pred_lp, targets_lp))
         loss_lp_att = sum(loss_lp_att)
 

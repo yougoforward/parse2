@@ -43,8 +43,8 @@ class ConvGRU(nn.Module):
         update_gate = torch.sigmoid(beta)
 
         combined = torch.cat([input_tensor, reset_gate*h_cur], dim=1)
-        cnm = self.conv_can(combined)
-        # cnm = torch.tanh(cc_cnm)
+        cc_cnm = self.conv_can(combined)
+        cnm = torch.tanh(cc_cnm)
 
         h_next = (1 - update_gate) * h_cur + update_gate * cnm
         return h_next
@@ -226,7 +226,6 @@ class GNN(nn.Module):
         # for part node
         p_node_list_new, decomp_att_up, decomp_att_lp = self.part_infer(f_node_list, h_node_list, p_node_list, xp, h_node_att_list)
         # return p_node_list_new, h_node_list_new, f_node_new_list, decomp_att_fh, decomp_att_up, decomp_att_lp
-
         return p_node_list_new, h_node_list_new, f_node_new_list, decomp_att_up, decomp_att_lp
 
 class GNN_infer(nn.Module):
@@ -289,7 +288,7 @@ class GNN_infer(nn.Module):
         decomp_att_up.append(decomp_att_up_new)
         decomp_att_lp.append(decomp_att_lp_new)
 
-        return [sum(p_seg)], [sum(h_seg)], [sum(f_seg)], decomp_att_up, decomp_att_lp
+        return [sum(p_seg)], [sum(h_seg)], [sum(f_seg)], [sum(decomp_att_up)], [sum(decomp_att_l)]
 
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
