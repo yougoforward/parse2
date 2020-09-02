@@ -346,7 +346,7 @@ class Part_Graph(nn.Module):
             message = sum(xpp_list_list[i])
             xp_list_new.append(self.node_update_list[i](p_node_list[i+1], message))
         # return xp_list_new, decomp_map_u, decomp_map_l, Fdep_att_list
-        return xp_list_new, [], [], []
+        return xp_list_new, [], [], Fdep_att_list
 
 
 class GNN(nn.Module):
@@ -380,7 +380,7 @@ class GNN(nn.Module):
         p_node_list_new, decomp_map_u, decomp_map_l, Fdep_att_list = self.part_infer(f_node_list, h_node_list, p_node_list, xp, p_node_att_list)
 
         # return p_node_list_new, h_node_list_new, f_node_new_list, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list
-        return p_node_list_new, h_node_list_new, f_node_new_list, [], [], [], [], [], [], [Fdep_att_list]
+        return p_node_list_new, h_node_list_new, f_node_new_list, [], [], [], [], [], [], Fdep_att_list
 
 
 class GNN_infer(nn.Module):
@@ -431,8 +431,8 @@ class GNN_infer(nn.Module):
         # gnn infer
         p_node_list_new, h_node_list_new, f_node_list_new, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, Fdep_att_list = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf, p_att_list, h_att_list, f_att_list)
         # node supervision new
-        f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list_new], dim=1))
-        h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list_new], dim=1))
+        # f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list_new], dim=1))
+        # h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list_new], dim=1))
         p_seg.append(torch.cat([self.node_seg(node) for node in p_node_list_new], dim=1))
 
         return p_seg, h_seg, f_seg, [decomp_map_f], [decomp_map_u], [decomp_map_l], [comp_map_f], [comp_map_u], [comp_map_l], [Fdep_att_list]
