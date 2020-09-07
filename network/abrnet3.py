@@ -21,6 +21,8 @@ class DecoderModule(nn.Module):
                                    nn.Sigmoid())
         self.conv0 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
+        self.conv01 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False))
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False),
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
@@ -30,6 +32,7 @@ class DecoderModule(nn.Module):
 
     def forward(self, x, xm):
         skip=self.conv0(xm)
+        x = self.conv01(x)
         out = self.conv1(torch.cat([skip, x], dim=1))
         out = out + self.ga_se(out)*out
         out = self.pred_conv(out)
@@ -46,6 +49,8 @@ class DecoderModule2(nn.Module):
                                    nn.Sigmoid())
         self.conv0 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
+        self.conv01 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
+                                   BatchNorm2d(256), nn.ReLU(inplace=False))
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
         self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
@@ -61,6 +66,7 @@ class DecoderModule2(nn.Module):
         self.relu =  nn.ReLU(inplace=False)
     def forward(self, x, xm, xl):
         skip0=self.conv0(xm)
+        x = self.conv01(x)
         xt_fea = self.conv1(torch.cat([skip0, x], dim=1))
         
         _, _, th, tw = xl.size()
