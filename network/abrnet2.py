@@ -38,6 +38,8 @@ class DecoderModule(nn.Module):
         # xl = self.conv2(xl)
         # x = torch.cat([xt, xl], dim=1)
         # x_fea = self.conv3(x)
+        
+        
         x_seg = self.conv4(xt_fea)
         return x_seg, xt_fea
 
