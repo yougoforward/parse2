@@ -98,9 +98,9 @@ class Decoder(nn.Module):
         context = F.interpolate(context, size=(h, w), mode='bilinear', align_corners=True)
         # context = self.fuse(torch.cat([self.skip(x[1]), context], dim=1))
 
-        seg_part = self.layer_part(context, x[-2], x[-3])
-        seg_half = self.layer_half(context, x[-2])
-        seg_full = self.layer_full(context, x[-2])
+        seg_part = self.layer_part(context, x[1], x[0])
+        seg_half = self.layer_half(context, x[1])
+        seg_full = self.layer_full(context, x[1])
 
         return [seg_part, seg_half, seg_full, x_dsn]
 
