@@ -70,8 +70,8 @@ class DecoderModule2(nn.Module):
         _, _, th, tw = xl.size()
         xl = self.conv20(xl)
         xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
-        x = torch.cat([xt, xl], dim=1)
-        out = self.conv3(x)
+        out = torch.cat([xt, xl], dim=1)
+        out = self.conv3(out)
         out = out + self.ga_se(x)*out
         out = self.pred_conv(out)
         return out
