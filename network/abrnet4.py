@@ -32,8 +32,8 @@ class DecoderModule(nn.Module):
 
     def forward(self, x, xm):
         skip=self.conv0(xm)
-        x = self.conv01(x)
-        out = self.conv1(torch.cat([skip, x], dim=1))
+        xp = self.conv01(x)
+        out = self.conv1(torch.cat([skip, xp], dim=1))
         out = out + self.ga_se(x)*out
         out = self.pred_conv(out)
         return out
