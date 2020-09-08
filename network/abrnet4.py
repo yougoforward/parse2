@@ -15,7 +15,7 @@ class DecoderModule(nn.Module):
         super(DecoderModule, self).__init__()
         
         self.ga_se = nn.Sequential(nn.AdaptiveAvgPool2d(1),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False), 
+                                   nn.Conv2d(512, 256, kernel_size=1, padding=0, stride=1, bias=False), 
                                    nn.ReLU(inplace=False), 
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=True), 
                                    nn.Sigmoid())
@@ -34,7 +34,7 @@ class DecoderModule(nn.Module):
         skip=self.conv0(xm)
         x = self.conv01(x)
         out = self.conv1(torch.cat([skip, x], dim=1))
-        out = out + self.ga_se(out)*out
+        out = out + self.ga_se(x)*out
         out = self.pred_conv(out)
         return out
     
