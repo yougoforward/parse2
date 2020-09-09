@@ -64,14 +64,14 @@ class DecoderModule2(nn.Module):
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
     def forward(self, x, xm, xl):
         skip0=self.conv0(xm)
-        xt_fea = self.conv1(torch.cat([skip0, x], dim=1))
-        
+        out = self.conv1(torch.cat([skip0, x], dim=1))
+        out = out + self.ga_se(out)*out
         _, _, th, tw = xl.size()
         xl = self.conv2(xl)
-        xt = F.interpolate(xt_fea, size=(th, tw), mode='bilinear', align_corners=True)
+        xt = F.interpolate(out, size=(th, tw), mode='bilinear', align_corners=True)
         out = torch.cat([xt, xl], dim=1)
         out = self.conv3(out)
-        out = out + self.ga_se(out)*out
+        # out = out + self.ga_se(out)*out
         out = self.pred_conv(out)
         return out
 class Decoder(nn.Module):
