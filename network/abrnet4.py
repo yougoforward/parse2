@@ -15,17 +15,15 @@ class DecoderModule(nn.Module):
         super(DecoderModule, self).__init__()
         
         self.ga_se = nn.Sequential(nn.AdaptiveAvgPool2d(1),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False), 
+                                   nn.Conv2d(256, 128, kernel_size=1, padding=0, stride=1, bias=False), 
                                    nn.ReLU(inplace=False), 
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=True), 
+                                   nn.Conv2d(128, 256, kernel_size=1, padding=0, stride=1, bias=True), 
                                    nn.Sigmoid())
         self.conv0 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
         self.conv01 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
         self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False)
                                    )
         self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
@@ -43,18 +41,16 @@ class DecoderModule2(nn.Module):
     def __init__(self, num_classes):
         super(DecoderModule2, self).__init__()
         self.ga_se = nn.Sequential(nn.AdaptiveAvgPool2d(1),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False), 
+                                   nn.Conv2d(512, 256, kernel_size=1, padding=0, stride=1, bias=False), 
                                    nn.ReLU(inplace=False), 
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=True), 
+                                   nn.Conv2d(256, 512, kernel_size=1, padding=0, stride=1, bias=True), 
                                    nn.Sigmoid())
         self.conv0 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(512), nn.ReLU(inplace=False))
         self.conv1 = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, padding=1, bias=False),
-                                   BatchNorm2d(512), nn.ReLU(inplace=False),
-                                   nn.Conv2d(512, 256, kernel_size=1, padding=0, dilation=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
+                                   BatchNorm2d(512), nn.ReLU(inplace=False))
                                                
-        self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
+        self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(512, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
         
     def forward(self, x, xm, xl):
         skip0=self.conv0(xm)
