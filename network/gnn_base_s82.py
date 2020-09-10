@@ -9,7 +9,6 @@ from modules.com_mod import Bottleneck, ResGridNet, SEModule
 from modules.parse_mod import ASPPModule
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
-from modules.convGRU import ConvGRU
 
 class DecoderModule(nn.Module):
 
