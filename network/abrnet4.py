@@ -33,25 +33,6 @@ class DecoderModule(nn.Module):
         out = self.pred_conv(out)
         return out
 
-class DecoderModule2(nn.Module):
-    
-    def __init__(self, num_classes):
-        super(DecoderModule2, self).__init__()
-        self.conv0 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=1, padding=0, bias=False),
-                                   BatchNorm2d(512), nn.ReLU(inplace=False))
-        self.conv1 = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, padding=1, bias=False),
-                                   BatchNorm2d(512), nn.ReLU(inplace=False),
-                                   nn.Conv2d(512, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
-                                               
-        self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
-        
-    def forward(self, x, xm, xl):
-        skip0=self.conv0(xm)
-        out = self.conv1(torch.cat([skip0, x], dim=1))
-        
-        out = self.pred_conv(out)
-        return out
         
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
@@ -78,7 +59,7 @@ class Decoder(nn.Module):
         context = F.interpolate(context, size=(h, w), mode='bilinear', align_corners=True)
         # context = self.fuse(torch.cat([self.skip(x[1]), context], dim=1))
 
-        seg_part = self.layer_part(context, x[1], x[0])
+        seg_part = self.layer_part(context, x[1])
         seg_half = self.layer_half(context, x[1])
         seg_full = self.layer_full(context, x[1])
 
