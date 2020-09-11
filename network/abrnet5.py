@@ -6,7 +6,7 @@ from torch.nn import functional as F
 
 from inplace_abn.bn import InPlaceABNSync
 from modules.com_mod import Bottleneck, ResGridNet, SEModule
-from modules.parse_mod import MagicModule, ASPPModule
+from modules.parse_mod import MagicModule, ASPPModule2
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 class DecoderModule(nn.Module):
@@ -29,7 +29,7 @@ class DecoderModule(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, num_classes=7, hbody_cls=3, fbody_cls=2):
         super(Decoder, self).__init__()
-        self.layer5 = ASPPModule(2048, 512)
+        self.layer5 = ASPPModule2(2048, 512)
         self.layer_part = DecoderModule(num_classes)
         self.layer_half = DecoderModule(hbody_cls)
         self.layer_full = DecoderModule(fbody_cls)
@@ -48,15 +48,20 @@ class Decoder(nn.Module):
                                    BatchNorm2d(512), nn.ReLU(inplace=False))
         self.p8 = nn.Sequential(nn.Conv2d(512, 512, kernel_size=3, padding=8, dilation=8, bias=False),
                                    BatchNorm2d(512), nn.ReLU(inplace=False))
-        self.project = nn.Sequential(nn.Conv2d(512*3, 512, kernel_size=1, padding=0, bias=False),
+        self.project = nn.Sequential(nn.Conv2d(512*7, 512, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(512), nn.ReLU(inplace=False))
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
         _,_,h,w = x[1].size()
-        context0 = self.layer5(x[-1])
+        context0, gp, f3_1, f3_2, f3_8, f3_16 = self.layer5(x[-1])
         context0 = F.interpolate(context0, size=(h, w), mode='bilinear', align_corners=True)
         context1 = self.fuse(torch.cat([self.skip(x[1]), context0], dim=1))
-        context = self.project(torch.cat([context0, self.p1(context1), self.p8(context1)], dim=1))
+        
+        f3_1 = F.interpolate(f3_1, size=(h, w), mode='bilinear', align_corners=True)
+        f3_2 = F.interpolate(f3_2, size=(h, w), mode='bilinear', align_corners=True)
+        f3_8 = F.interpolate(f3_8, size=(h, w), mode='bilinear', align_corners=True)
+        f3_16 = F.interpolate(f3_16, size=(h, w), mode='bilinear', align_corners=True)
+        context = self.project(torch.cat([f3_1, f3_2, f3_8, f3_16, self.p1(context1), self.p8(context1), gp.expand_as(context0)], dim=1))
 
         p_seg = self.layer_part(context)
         h_seg = self.layer_half(context)
