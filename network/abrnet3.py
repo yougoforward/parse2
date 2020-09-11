@@ -51,8 +51,8 @@ class Decoder(nn.Module):
         x_dsn = self.layer_dsn(x[-2])
         _,_,h,w = x[1].size()
         context0 = self.layer5(x[-1])
-        context1 = F.interpolate(context0, size=(h, w), mode='bilinear', align_corners=True)
-        context1 = self.fuse(torch.cat([self.skip(x[1]), context1], dim=1))
+        context0 = F.interpolate(context0, size=(h, w), mode='bilinear', align_corners=True)
+        context1 = self.fuse(torch.cat([self.skip(x[1]), context0], dim=1))
         context = self.project(torch.cat([context0, context1], dim=1))
 
         p_seg = self.layer_part(context)
