@@ -23,13 +23,18 @@ class DecoderModule(nn.Module):
                                    nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False)
                                    )
+        self.se = nn.Sequential(nn.AdaptiveAvgPool2d(1),
+                            nn.Conv2d(256, 256, 1, bias=False),
+                            nn.ReLU(True),
+                            nn.Conv2d(256, 256, 1, bias=True),
+                            nn.Sigmoid())
         self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
 
     def forward(self, x, xm):
         skip=self.conv0(xm)
         xp = self.conv01(x)
         out = self.conv1(torch.cat([skip, xp], dim=1))
-        
+        out = out + self.se(out)*out
         out = self.pred_conv(out)
         return out
 

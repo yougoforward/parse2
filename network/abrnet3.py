@@ -15,9 +15,15 @@ class DecoderModule(nn.Module):
         super(DecoderModule, self).__init__()
         self.conv0 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
+        self.se = nn.Sequential(nn.AdaptiveAvgPool2d(1),
+                            nn.Conv2d(256, 256, 1, bias=False),
+                            nn.ReLU(True),
+                            nn.Conv2d(256, 256, 1, bias=True),
+                            nn.Sigmoid())
         self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
     def forward(self, x):
         out = self.conv0(x)
+        out = out + self.se(out)*out
         out = self.pred_conv(out)
         return out
 class Decoder(nn.Module):
@@ -36,14 +42,18 @@ class Decoder(nn.Module):
                                    BatchNorm2d(512), nn.ReLU(inplace=False),
                                    )
         self.fuse = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=3, padding=1, bias=False),
+                                   BatchNorm2d(512), nn.ReLU(inplace=False),
+                                   nn.Conv2d(512, 512, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(512), nn.ReLU(inplace=False))
-
+        self.project = nn.Sequential(nn.Conv2d(1024, 512, kernel_size=1, padding=0, bias=False),
+                                   BatchNorm2d(512), nn.ReLU(inplace=False))
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
         _,_,h,w = x[1].size()
-        context = self.layer5(x[-1])
-        context = F.interpolate(context, size=(h, w), mode='bilinear', align_corners=True)
-        context = self.fuse(torch.cat([self.skip(x[1]), context], dim=1))
+        context0 = self.layer5(x[-1])
+        context1 = F.interpolate(context0, size=(h, w), mode='bilinear', align_corners=True)
+        context1 = self.fuse(torch.cat([self.skip(x[1]), context1], dim=1))
+        context = self.project(torch.cat([context0, context1], dim=1))
 
         p_seg = self.layer_part(context)
         h_seg = self.layer_half(context)
