@@ -628,8 +628,8 @@ class gnn_loss_dp(nn.Module):
         targets_up = targets_up.argmax(dim=1, keepdim=False)
         targets_up[upper_bg_node == 1] = self.ignore_index
         loss_up_att = []
-        for i in range(len(preds[-3])):
-            pred_up = F.interpolate(input=preds[-3][i], size=(h, w), mode='bilinear', align_corners=True)
+        for i in range(len(preds[4])):
+            pred_up = F.interpolate(input=preds[5][i], size=(h, w), mode='bilinear', align_corners=True)
             loss_up_att.append(self.criterion2(pred_up, targets_up))
         loss_up_att = sum(loss_up_att)
 
@@ -642,8 +642,8 @@ class gnn_loss_dp(nn.Module):
         targets_lp = targets_lp.argmax(dim=1,keepdim=False)
         targets_lp[lower_bg_node==1]=self.ignore_index
         loss_lp_att = []
-        for i in range(len(preds[-2])):
-            pred_lp = F.interpolate(input=preds[-2][i], size=(h, w), mode='bilinear', align_corners=True)
+        for i in range(len(preds[5])):
+            pred_lp = F.interpolate(input=preds[5][i], size=(h, w), mode='bilinear', align_corners=True)
             loss_lp_att.append(self.criterion2(pred_lp, targets_lp))
         loss_lp_att = sum(loss_lp_att)
 
