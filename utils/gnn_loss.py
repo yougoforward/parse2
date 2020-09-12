@@ -611,7 +611,9 @@ class gnn_loss_dp(nn.Module):
         valid = (targets[0] != self.ignore_index).unsqueeze(1)
 
         #decomp fh
-        target_fh = one_hot_hb_list[2]+(1-one_hot_fb_list[1])*self.ignore_index
+        full_bg_node = 1-one_hot_fb_list[1]
+        target_fh = one_hot_hb_list[2]
+        target_fh[full_bg_node == 1] = self.ignore_index
 
         loss_fh_att = []
         for i in range(len(preds[3])):
