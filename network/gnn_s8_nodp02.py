@@ -242,11 +242,11 @@ class GNN(nn.Module):
 
     def forward(self, p_node_list, h_node_list, f_node_list, xp, xh, xf, p_node_att_list, h_node_att_list, f_node_att_list):
         # for full body node
-        f_node_new_list = f_node_list
-        # f_node_new_list = self.full_infer(f_node_list, h_node_list, p_node_list, xf, h_node_att_list)
+        # f_node_new_list = f_node_list
+        f_node_new_list = self.full_infer(f_node_list, h_node_list, p_node_list, xf, h_node_att_list)
         # for half body node
-        h_node_list_new = h_node_list
-        # h_node_list_new, decomp_att_fh = self.half_infer(f_node_list, h_node_list, p_node_list, xh, f_node_att_list, p_node_att_list)
+        # h_node_list_new = h_node_list
+        h_node_list_new, decomp_att_fh = self.half_infer(f_node_list, h_node_list, p_node_list, xh, f_node_att_list, p_node_att_list)
         # for part node
         p_node_list_new, decomp_att_up, decomp_att_lp = self.part_infer(f_node_list, h_node_list, p_node_list, xp, h_node_att_list)
         
