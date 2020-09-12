@@ -289,6 +289,7 @@ class Part_Graph(nn.Module):
         
         self.F_dep_list = Contexture(in_dim=in_dim, hidden_dim=hidden_dim, part_list_list=self.part_list_list)
         self.part_dp = Dependency(in_dim, hidden_dim)
+        self.alpha = nn.Parameter(torch.ones(1))
 
 
     def forward(self, f_node_list, h_node_list, p_node_list, xp, h_node_att_list):
@@ -322,11 +323,11 @@ class Part_Graph(nn.Module):
             elif i in self.upper_part_list:
                 decomp = decomp_u_list[self.upper_part_list.index(i)]
                 part_dp = sum(xpp_list_list[i-1])
-                node = self.update[i](decomp+part_dp, p_node_list[i])
+                node = self.update[i](decomp+part_dp*self.alpha, p_node_list[i])
             elif i  in self.lower_part_list:
                 decomp = decomp_l_list[self.lower_part_list.index(i)]
                 part_dp = sum(xpp_list_list[i-1])
-                node = self.update[i](decomp+part_dp, p_node_list[i])
+                node = self.update[i](decomp+part_dp*self.alpha, p_node_list[i])
 
             p_node_list_new.append(node)
         return p_node_list_new, decomp_u_att, decomp_l_att, Fdep_att_list
