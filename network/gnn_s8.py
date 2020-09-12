@@ -141,7 +141,7 @@ class Dep_Context(nn.Module):
             hu_center = torch.bmm(p_fea.view(n,c,-1),norm_att) #n,c,1
             coord_center = torch.bmm(coord_fea.view(n,8,-1),norm_att) #n,8,1
 
-            query = self.query_conv(torch.cat([hu_center, coord_center], dim=1)).expand_as(key)
+            query = self.query_conv(torch.cat([hu_center, coord_center], dim=1)).unsqueeze(-1).expand_as(key)
         
 
             energy = self.project(torch.cat([query, key], dim=1))
