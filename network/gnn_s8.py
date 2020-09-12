@@ -279,6 +279,9 @@ class Part_Graph(nn.Module):
         self.hidden = hidden_dim
         self.upper_part_list = upper_part_list
         self.lower_part_list = lower_part_list
+        self.edge_index = torch.nonzero(adj_matrix)
+        self.edge_index_num = self.edge_index.shape[0]
+        self.part_list_list = [[] for i in range(self.cls_p - 1)]
 
         self.decomp_u = Decomposition(in_dim, hidden_dim, len(upper_part_list))
         self.decomp_l = Decomposition(in_dim, hidden_dim, len(lower_part_list))
