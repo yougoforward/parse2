@@ -644,32 +644,34 @@ class gnn_loss_dp(nn.Module):
             loss_lp_att.append(self.criterion2(pred_lp, targets_lp))
         loss_lp_att = sum(loss_lp_att)
 
-        # dependency decomposition
-        # loss_context_att =[]
-        loss_dp_att = []
-        for i in range(len(preds[-2])):
-            # loss_context = []
-            loss_dp = []
-            for j in range(self.num_classes-1):
-                part_list = self.part_list_list[j]
-                parts_onehot = []
-                for k in part_list:
-                    parts_onehot.append(one_hot_pb_list[k+1])
-                parts_bg_node = 1-sum(parts_onehot)
-                targets_dp_onehot = torch.stack(parts_onehot, dim=1)
-                targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
-                targets_dp[parts_bg_node == 1] = self.ignore_index
-                pred_dp = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
-                loss_dp.append(self.criterion2(pred_dp, targets_dp))
+        # # dependency decomposition
+        # # loss_context_att =[]
+        # loss_dp_att = []
+        # for i in range(len(preds[-2])):
+        #     # loss_context = []
+        #     loss_dp = []
+        #     for j in range(self.num_classes-1):
+        #         part_list = self.part_list_list[j]
+        #         parts_onehot = []
+        #         for k in part_list:
+        #             parts_onehot.append(one_hot_pb_list[k+1])
+        #         parts_bg_node = 1-sum(parts_onehot)
+        #         targets_dp_onehot = torch.stack(parts_onehot, dim=1)
+        #         targets_dp = targets_dp_onehot.argmax(dim=1, keepdim=False)
+        #         targets_dp[parts_bg_node == 1] = self.ignore_index
+        #         pred_dp = F.interpolate(input=preds[-2][i][j], size=(h, w), mode='bilinear', align_corners=True)
+        #         loss_dp.append(self.criterion2(pred_dp, targets_dp))
                 
-            loss_dp = sum(loss_dp)
-            loss_dp_att.append(loss_dp)
-        loss_dp_att = sum(loss_dp_att)
+        #     loss_dp = sum(loss_dp)
+        #     loss_dp_att.append(loss_dp)
+        # loss_dp_att = sum(loss_dp_att)
 
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return loss[0] + 0.4*loss_hb[0] + 0.4*loss_fb[0] + (sum(loss[1:]) + 0.4*sum(loss_hb[1:]) + 0.4*sum(loss_fb[1:]))/(len(preds[1])-1)+ 0.4 * loss_dsn + 0.2*(loss_fh_att + loss_up_att + loss_lp_att + loss_dp_att)/len(preds[3])
+        # return loss[0] + 0.4*loss_hb[0] + 0.4*loss_fb[0] + (sum(loss[1:]) + 0.4*sum(loss_hb[1:]) + 0.4*sum(loss_fb[1:]))/(len(preds[1])-1)+ 0.4 * loss_dsn + 0.2*(loss_fh_att + loss_up_att + loss_lp_att + loss_dp_att)/len(preds[3])
+        return loss[0] + 0.4*loss_hb[0] + 0.4*loss_fb[0] + (sum(loss[1:]) + 0.4*sum(loss_hb[1:]) + 0.4*sum(loss_fb[1:]))/(len(preds[1])-1)+ 0.4 * loss_dsn + 0.2*(loss_fh_att + loss_up_att + loss_lp_att)/len(preds[3])
+
 
 class bce_gnn_loss(nn.Module):
     """Lovasz loss for Alpha process"""
