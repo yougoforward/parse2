@@ -252,7 +252,7 @@ class Half_Graph(nn.Module):
             lower_parts_att.append(p_node_att_list[part])
 
         h_node_list_new = []
-        decomp_f_list, decomp_f_att = self.decomp_u(f_node_list[1], h_node_list[1:], f_node_att_list[1], xh)
+        decomp_f_list, decomp_f_att = self.decomp_f(f_node_list[1], h_node_list[1:], f_node_att_list[1], xh)
         
 
         for i in range(self.cls_h):
