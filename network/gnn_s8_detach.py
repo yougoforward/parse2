@@ -100,7 +100,7 @@ class Decomposition(nn.Module):
     def forward(self, parent, child_list, parent_att, child_fea):
         # decomp_map = self.decomp_att(torch.cat([parent_att, child_fea], dim=1))
         decomp_map = self.decomp_att(parent_att*child_fea)
-        decomp_att = torch.softmax(decomp_map, dim=1)
+        decomp_att = torch.softmax(decomp_map.detach(), dim=1)
         decomp_att_list = torch.split(decomp_att, 1, dim=1)
         decomp_list = [self.relation(torch.cat([parent * decomp_att_list[i]*parent_att, child_list[i]], dim=1)) for i in
                           range(len(child_list))]
@@ -180,7 +180,7 @@ class Contexture(nn.Module):
         # att_list = [self.att_list[i](torch.cat([F_dep_att_list[i], p_fea], dim=1)) for i in range(len(p_att_list))]
         att_list = [self.att_list[i](F_dep_att_list[i]* p_fea) for i in range(len(p_att_list))]
 
-        att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(p_att_list))]
+        att_list_list = [list(torch.split(self.softmax(att_list[i].detach()), 1, dim=1)) for i in range(len(p_att_list))]
         return F_dep_list, att_list_list, att_list
 
 
@@ -424,12 +424,15 @@ class GNN_infer(nn.Module):
         f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list], dim=1))
         h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list], dim=1))
         p_seg.append(torch.cat([self.node_seg(node) for node in p_node_list], dim=1))
-        f_att_list = list(torch.split(torch.softmax(f_seg[0], 1), 1, dim=1))
-        h_att_list = list(torch.split(torch.softmax(h_seg[0], 1), 1, dim=1))
-        p_att_list = list(torch.split(torch.softmax(p_seg[0], 1), 1, dim=1))
+        f_att_list = list(torch.split(torch.softmax(f_seg[0].detach(), 1), 1, dim=1))
+        h_att_list = list(torch.split(torch.softmax(h_seg[0].detach(), 1), 1, dim=1))
+        p_att_list = list(torch.split(torch.softmax(p_seg[0].detach(), 1), 1, dim=1))
+        p_node_list = [node.detach() for node in p_node_list]
+        h_node_list = [node.detach() for node in h_node_list]
+        f_node_list = [node.detach() for node in f_node_list]
 
         # gnn infer
-        p_node_list_new, h_node_list_new, f_node_list_new, decomp_att_fh_new, decomp_att_up_new, decomp_att_lp_new, Fdep_att_list_new = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf, p_att_list, h_att_list, f_att_list)
+        p_node_list_new, h_node_list_new, f_node_list_new, decomp_att_fh_new, decomp_att_up_new, decomp_att_lp_new, Fdep_att_list_new = self.gnn(p_node_list, h_node_list, f_node_list, xp.detach(), xh.detach(), xf.detach(), p_att_list, h_att_list, f_att_list)
         # node supervision new
         f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list_new], dim=1))
         h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list_new], dim=1))
