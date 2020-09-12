@@ -268,7 +268,7 @@ class Half_Graph(nn.Module):
                 node = self.update[i](comp + decomp, h_node_list[i])
             h_node_list_new.append(node)
 
-        return h_node_list_new, decomp_att
+        return h_node_list_new, decomp_f_att
 
 
 class Part_Graph(nn.Module):
