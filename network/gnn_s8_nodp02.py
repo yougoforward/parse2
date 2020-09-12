@@ -160,7 +160,7 @@ class Half_Graph(nn.Module):
             lower_parts_att.append(p_node_att_list[part])
 
         h_node_list_new = []
-        decomp_f_list, decomp_f_att = self.decomp_u(f_node_list[1], h_node_list[1:], f_node_att_list[1], xh)
+        decomp_f_list, decomp_f_att = self.decomp_f(f_node_list[1], h_node_list[1:], f_node_att_list[1], xh)
         
 
         for i in range(self.cls_h):
@@ -176,7 +176,7 @@ class Half_Graph(nn.Module):
                 node = self.update[i](comp + decomp, h_node_list[i])
             h_node_list_new.append(node)
 
-        return h_node_list_new, decomp_att
+        return h_node_list_new, decomp_f_att
 
 
 class Part_Graph(nn.Module):
@@ -357,7 +357,7 @@ class Decoder(nn.Module):
         f_fea = self.layer_full(context, x[1])
 
         # gnn infer
-        p_seg, h_seg, f_seg, decomp_att_fh, decomp_att_fhdecomp_att_up, decomp_att_lp = self.gnn_infer(p_fea, h_fea, f_fea)
+        p_seg, h_seg, f_seg, decomp_att_fh, decomp_att_up, decomp_att_lp = self.gnn_infer(p_fea, h_fea, f_fea)
 
         return p_seg, h_seg, f_seg, decomp_att_fh, decomp_att_up, decomp_att_lp, x_dsn
 

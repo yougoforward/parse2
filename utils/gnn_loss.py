@@ -575,7 +575,6 @@ class gnn_loss_dp(nn.Module):
                                       only_present=self.only_present))
         # loss_fb = sum(loss_fb)
 
-
         #one hot part
         labels_p = targets[0]
         one_label_p = labels_p.clone().long()
