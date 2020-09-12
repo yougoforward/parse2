@@ -177,7 +177,7 @@ class Contexture(nn.Module):
 
 
 class Dependency(nn.Module):
-    def __init__(self, indim=256, hidden_dim=10):
+    def __init__(self, in_dim=256, hidden_dim=10):
         super(Dependency, self).__init__()
         self.project = nn.Sequential(
             nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
