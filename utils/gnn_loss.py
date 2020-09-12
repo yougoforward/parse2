@@ -417,25 +417,11 @@ class gnn_loss3(nn.Module):
         h, w = targets[0].size(1), targets[0].size(2)
         # seg loss
         loss=[]
-        for i in range(len(preds[0])-1):
+        for i in range(len(preds[0])):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss.append(0.4*self.criterion(pred, targets[0]))
             pred = F.softmax(input=pred, dim=1)
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
-
-        #part seg loss final
-        pred0 = F.interpolate(input=preds[0][-1], size=(h, w), mode='bilinear', align_corners=True)
-        pred = F.softmax(input=pred0, dim=1)
-        #lovasz loss
-        lovasz_loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
-        # loss.append(0.5*lovasz_loss)
-        # #aaf loss
-        # aaf_loss = self.aaf_loss(pred, targets[0])
-        #ce loss
-        loss_ce = self.criterion(pred0, targets[0])
-        # loss.append(0.5*loss_ce)
-        # loss = loss + lovasz_loss + aaf_loss + loss_ce
-        loss_final = (lovasz_loss + loss_ce)
-        loss = sum(loss)
 
 
         # half body
@@ -492,14 +478,14 @@ class gnn_loss3(nn.Module):
         # #
         valid = (targets[0] != self.ignore_index).unsqueeze(1)
 
-        # #decomp fh
-        # target_fh = one_hot_hb_list[2]+(1-one_hot_fb_list[1])*255
+        #decomp fh
+        target_fh = one_hot_hb_list[2]+(1-one_hot_fb_list[1])*self.ignore_index
 
-        # loss_fh_att = []
-        # for i in range(len(preds[3])):
-        #     pred_fh = F.interpolate(input=preds[3][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     loss_fh_att.append(self.criterion2(pred_fh, target_fh.long()))
-        # loss_fh_att = sum(loss_fh_att)
+        loss_fh_att = []
+        for i in range(len(preds[3])):
+            pred_fh = F.interpolate(input=preds[3][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss_fh_att.append(self.criterion2(pred_fh, target_fh.long()))
+        loss_fh_att = sum(loss_fh_att)
 
         #decomp up
         upper_bg_node = 1-one_hot_hb_list[1]
@@ -532,7 +518,7 @@ class gnn_loss3(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return loss_final+(loss + 0.4*loss_hb + 0.4*loss_fb)/len(preds[1])+ 0.4 * loss_dsn + 0.2*(loss_up_att + loss_lp_att)/len(preds[3])
+        return (loss + 0.4*loss_hb + 0.4*loss_fb)/len(preds[1])+ 0.4 * loss_dsn + 0.2*(loss_fh_att+ loss_up_att + loss_lp_att)/len(preds[3])
 
 class gnn_loss_dp(nn.Module):
     """Lovasz loss for Alpha process"""

@@ -10,7 +10,6 @@ from modules.parse_mod import MagicModule, ASPPModule
 from modules.senet import se_resnext50_32x4d, se_resnet101, senet154
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
-# from modules.convGRU import ConvGRU
 class ConvGRU(nn.Module):
     def __init__(self, input_dim, hidden_dim, kernel_size):
         super(ConvGRU, self).__init__()
@@ -19,7 +18,7 @@ class ConvGRU(nn.Module):
         self.conv_gates = nn.Conv2d(input_dim + hidden_dim, 2, kernel_size=1, padding=0, stride=1, bias=True)
         self.conv_can = nn.Sequential(
             nn.Conv2d(input_dim + hidden_dim, hidden_dim, kernel_size=kernel_size, padding=self.padding, stride=1, bias=False),
-            InPlaceABNSync(hidden_dim)
+            InPlaceABNSync(hidden_dim), nn.ReLU(inplace=False)
         )
 
         nn.init.orthogonal_(self.conv_gates.weight)
@@ -221,11 +220,11 @@ class GNN(nn.Module):
 
     def forward(self, p_node_list, h_node_list, f_node_list, xp, xh, xf, p_node_att_list, h_node_att_list, f_node_att_list):
         # for full body node
-        f_node_new_list = f_node_list
-        # f_node_new_list = self.full_infer(f_node_list, h_node_list, p_node_list, xf, h_node_att_list)
+        # f_node_new_list = f_node_list
+        f_node_new_list = self.full_infer(f_node_list, h_node_list, p_node_list, xf, h_node_att_list)
         # for half body node
-        h_node_list_new = h_node_list
-        # h_node_list_new, decomp_att_fh = self.half_infer(f_node_list, h_node_list, p_node_list, xh, f_node_att_list, p_node_att_list)
+        # h_node_list_new = h_node_list
+        h_node_list_new, decomp_att_fh = self.half_infer(f_node_list, h_node_list, p_node_list, xh, f_node_att_list, p_node_att_list)
         # for part node
         p_node_list_new, decomp_att_up, decomp_att_lp = self.part_infer(f_node_list, h_node_list, p_node_list, xp, h_node_att_list)
 
@@ -286,8 +285,8 @@ class GNN_infer(nn.Module):
         # gnn infer
         p_node_list_new, h_node_list_new, f_node_list_new, decomp_att_fh_new, decomp_att_up_new, decomp_att_lp_new = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf, p_att_list, h_att_list, f_att_list)
         # node supervision new
-        # f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list_new], dim=1))
-        # h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list_new], dim=1))
+        f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list_new], dim=1))
+        h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list_new], dim=1))
         p_seg.append(torch.cat([self.node_seg(node) for node in p_node_list_new], dim=1))
         decomp_att_fh.append(decomp_att_fh_new)
         decomp_att_up.append(decomp_att_up_new)
