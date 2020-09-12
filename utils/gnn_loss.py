@@ -423,7 +423,8 @@ class gnn_loss3(nn.Module):
             pred = F.softmax(input=pred, dim=1)
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
 
-
+        loss = sum(loss)
+        
         # half body
         loss_hb = []
         for i in range(len(preds[1])):
@@ -548,27 +549,13 @@ class gnn_loss_dp(nn.Module):
         h, w = targets[0].size(1), targets[0].size(2)
         # seg loss
         loss=[]
-        for i in range(len(preds[0])-1):
+        for i in range(len(preds[0])):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss_ce = 0.4*self.criterion(pred, targets[0])
             pred = F.softmax(input=pred, dim=1)
-            loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
+            loss.append(loss_ce+lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
 
-        #part seg loss final
-        pred0 = F.interpolate(input=preds[0][-1], size=(h, w), mode='bilinear', align_corners=True)
-        pred = F.softmax(input=pred0, dim=1)
-        #lovasz loss
-        lovasz_loss = lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present)
-        # loss.append(0.5*lovasz_loss)
-        # #aaf loss
-        # aaf_loss = self.aaf_loss(pred, targets[0])
-        #ce loss
-        loss_ce = self.criterion(pred0, targets[0])
-        # loss.append(0.5*loss_ce)
-        # loss = loss + lovasz_loss + aaf_loss + loss_ce
-        loss_final = (lovasz_loss + loss_ce)
-        loss = sum(loss)
-
-
+        # loss = sum(loss)
         # half body
         loss_hb = []
         for i in range(len(preds[1])):
@@ -576,7 +563,7 @@ class gnn_loss_dp(nn.Module):
             pred_hb = F.softmax(input=pred_hb, dim=1)
             loss_hb.append(lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
                                       only_present=self.only_present))
-        loss_hb = sum(loss_hb)
+        # loss_hb = sum(loss_hb)
 
 
         # full body
@@ -586,7 +573,7 @@ class gnn_loss_dp(nn.Module):
             pred_fb = F.softmax(input=pred_fb, dim=1)
             loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
                                       only_present=self.only_present))
-        loss_fb = sum(loss_fb)
+        # loss_fb = sum(loss_fb)
 
 
         #one hot part
@@ -623,56 +610,42 @@ class gnn_loss_dp(nn.Module):
         # #
         valid = (targets[0] != self.ignore_index).unsqueeze(1)
 
-        # #decomp fh
-        # loss_fh_att = []
-        # for i in range(len(preds[3])):
-        #     pred_fh = F.interpolate(input=preds[3][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     loss_fh_att.append(self.criterion2(pred_fh, targets[1].long()))
-        # loss_fh_att = sum(loss_fh_att)
+        #decomp fh
+        target_fh = one_hot_hb_list[2]+(1-one_hot_fb_list[1])*self.ignore_index
 
-        # #decomp up
-        # upper_bg_node = 1-one_hot_hb_list[1]
-        # upper_parts=[]
-        # for i in self.upper_part_list:
-        #     upper_parts.append(one_hot_pb_list[i])
-        # targets_up = torch.stack([upper_bg_node.long()] + upper_parts, dim=1)
-        # targets_up = targets_up.argmax(dim=1, keepdim=False)
-        # targets_up[targets[0] == self.ignore_index] = self.ignore_index
-        # loss_up_att = []
-        # for i in range(len(preds[4])):
-        #     pred_up = F.interpolate(input=preds[4][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     loss_up_att.append(self.criterion2(pred_up, targets_up))
-        # loss_up_att = sum(loss_up_att)
+        loss_fh_att = []
+        for i in range(len(preds[3])):
+            pred_fh = F.interpolate(input=preds[3][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss_fh_att.append(self.criterion2(pred_fh, target_fh.long()))
+        loss_fh_att = sum(loss_fh_att)
 
-        # #decomp lp
-        # lower_bg_node = 1-one_hot_hb_list[2]
-        # lower_parts = []
-        # for i in self.lower_part_list:
-        #     lower_parts.append(one_hot_pb_list[i])
-        # targets_lp = torch.stack([lower_bg_node.long()]+lower_parts, dim=1)
-        # targets_lp = targets_lp.argmax(dim=1,keepdim=False)
-        # targets_lp[targets[0]==self.ignore_index]=self.ignore_index
-        # loss_lp_att = []
-        # for i in range(len(preds[5])):
-        #     pred_lp = F.interpolate(input=preds[5][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     loss_lp_att.append(self.criterion2(pred_lp, targets_lp))
-        # loss_lp_att = sum(loss_lp_att)
+        #decomp up
+        upper_bg_node = 1-one_hot_hb_list[1]
+        upper_parts=[]
+        for i in self.upper_part_list:
+            upper_parts.append(one_hot_pb_list[i])
+        targets_up = torch.stack(upper_parts, dim=1)
+        targets_up = targets_up.argmax(dim=1, keepdim=False)
+        targets_up[upper_bg_node == 1] = self.ignore_index
+        loss_up_att = []
+        for i in range(len(preds[-3])):
+            pred_up = F.interpolate(input=preds[-3][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss_up_att.append(self.criterion2(pred_up, targets_up))
+        loss_up_att = sum(loss_up_att)
 
-        # # comp_f, comp_u, comp_l, bce loss
-        # com_full_onehot = one_hot_fb_list[1].float().unsqueeze(1)
-        # com_u_onehot = one_hot_hb_list[1].float().unsqueeze(1)
-        # com_l_onehot = one_hot_hb_list[2].float().unsqueeze(1)
-        # com_onehot = torch.cat([com_full_onehot,com_u_onehot, com_l_onehot], dim=1)
-        # loss_com_att = []
-        # for i in range(len(preds[6])):
-        #     pred_com_full = F.interpolate(input=preds[6][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     pred_com_u = F.interpolate(input=preds[7][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     pred_com_l = F.interpolate(input=preds[8][i], size=(h, w), mode='bilinear', align_corners=True)
-        #     # loss_com_att.append(self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1)[valid.expand(n, 3, h, w)], com_onehot[valid.expand(n, 3, h, w)].float()))
-        #     loss_com_att.append(self.bceloss(pred_com_full[valid], com_full_onehot[valid].float()))
-        #     loss_com_att.append(self.bceloss(pred_com_u[valid], com_u_onehot[valid].float()))
-        #     loss_com_att.append(self.bceloss(pred_com_l[valid], com_l_onehot[valid].float()))
-        # loss_com_att = sum(loss_com_att)
+        #decomp lp
+        lower_bg_node = 1-one_hot_hb_list[2]
+        lower_parts = []
+        for i in self.lower_part_list:
+            lower_parts.append(one_hot_pb_list[i])
+        targets_lp = torch.stack(lower_parts, dim=1)
+        targets_lp = targets_lp.argmax(dim=1,keepdim=False)
+        targets_lp[lower_bg_node==1]=self.ignore_index
+        loss_lp_att = []
+        for i in range(len(preds[-2])):
+            pred_lp = F.interpolate(input=preds[-2][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss_lp_att.append(self.criterion2(pred_lp, targets_lp))
+        loss_lp_att = sum(loss_lp_att)
 
         # dependency decomposition
         # loss_context_att =[]
@@ -699,8 +672,7 @@ class gnn_loss_dp(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return loss_final+(loss + 0.4*loss_hb + 0.4*loss_fb)/len(preds[1])+ 0.4 * loss_dsn + 0.2*loss_dp_att/len(preds[-2])
-        # return (loss + 0.4*loss_hb + 0.4*loss_fb)/len(preds[1])+ 0.4 * loss_dsn + 0.2*(loss_fh_att + loss_up_att + loss_lp_att + loss_com_att + loss_dp_att)/len(preds[3])
+        return loss[0] + 0.4*loss_hb[0] + 0.4*loss_fb[0] + (sum(loss[1:]) + 0.4*sum(loss_hb[1:]) + 0.4*sum(loss_fb[1:]))/len(preds[1]-1)+ 0.4 * loss_dsn + 0.2*(loss_fh_att + loss_up_att + loss_lp_att + loss_dp_att)/len(preds[3])
 
 class bce_gnn_loss(nn.Module):
     """Lovasz loss for Alpha process"""
