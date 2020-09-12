@@ -25,7 +25,7 @@ from utils.visualize import inv_preprocess, decode_predictions
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch Segmentation')
-    parser.add_argument('--method', type=str, default='abr')
+    parser.add_argument('--method', type=str, default='gnn_s8')
     # Datasets
     parser.add_argument('--root', default='./data/Person', type=str)
     parser.add_argument('--val-root', default='./data/Person', type=str)
@@ -36,9 +36,9 @@ def parse_args():
     parser.add_argument('--hbody-cls', type=int, default=3)
     parser.add_argument('--fbody-cls', type=int, default=2)
     # Optimization options
-    parser.add_argument('--epochs', default=151, type=int)
-    parser.add_argument('--batch-size', default=8, type=int)
-    parser.add_argument('--learning-rate', default=7e-3, type=float)
+    parser.add_argument('--epochs', default=150, type=int)
+    parser.add_argument('--batch-size', default=20, type=int)
+    parser.add_argument('--learning-rate', default=1e-2, type=float)
     parser.add_argument('--lr-mode', type=str, default='poly')
     parser.add_argument('--ignore-label', type=int, default=255)
     # Checkpoints
@@ -133,7 +133,7 @@ def main(args):
 
         # validation
         if epoch %10 ==0 or epoch > args.epochs-10:
-            val_pixacc0, val_miou0 = validation0(model, val_loader, epoch, writer)
+            # val_pixacc0, val_miou0 = validation0(model, val_loader, epoch, writer)
 
             val_pixacc, val_miou = validation(model, val_loader, epoch, writer)
             # save model

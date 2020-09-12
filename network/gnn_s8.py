@@ -363,7 +363,7 @@ class GNN(nn.Module):
         # h_node_list_new = h_node_list
         h_node_list_new, decomp_att_fh = self.half_infer(f_node_list, h_node_list, p_node_list, xh, f_node_att_list, p_node_att_list)
         # for part node
-        p_node_list_new, decomp_att_up, decomp_att_lp, Fdep_att_list = self.part_infer(f_node_list, h_node_list, p_node_list, xp, h_node_att_list， p_node_att_list)
+        p_node_list_new, decomp_att_up, decomp_att_lp, Fdep_att_list = self.part_infer(f_node_list, h_node_list, p_node_list, xp, h_node_att_list, p_node_att_list)
         
         # return p_node_list_new, h_node_list_new, f_node_new_list, decomp_att_fh, decomp_att_up, decomp_att_lp
         return p_node_list_new, h_node_list_new, f_node_new_list, decomp_att_fh, decomp_att_up, decomp_att_lp, Fdep_att_list
