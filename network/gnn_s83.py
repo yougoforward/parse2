@@ -81,14 +81,14 @@ class DecoderModule(nn.Module):
 class Decomposition(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, child_num=2):
         super(Decomposition, self).__init__()
-        # self.decomp_att = nn.Sequential(
-        #     nn.Conv2d(in_dim+1, in_dim, kernel_size=3, padding=1, stride=1, bias=False),
-        #     BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-        #     nn.Conv2d(in_dim, child_num, kernel_size=1, padding=0, stride=1, bias=True)
-        # )
         self.decomp_att = nn.Sequential(
+            nn.Conv2d(in_dim+1, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(in_dim), nn.ReLU(inplace=False),
             nn.Conv2d(in_dim, child_num, kernel_size=1, padding=0, stride=1, bias=True)
         )
+        # self.decomp_att = nn.Sequential(
+        #     nn.Conv2d(in_dim, child_num, kernel_size=1, padding=0, stride=1, bias=True)
+        # )
 
         self.relation = nn.Sequential(
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
@@ -98,8 +98,8 @@ class Decomposition(nn.Module):
         )
 
     def forward(self, parent, child_list, parent_att, child_fea):
-        # decomp_map = self.decomp_att(torch.cat([parent_att, child_fea], dim=1))
-        decomp_map = self.decomp_att(parent_att*child_fea)
+        decomp_map = self.decomp_att(torch.cat([parent_att, child_fea], dim=1))
+        # decomp_map = self.decomp_att(parent_att*child_fea)
         decomp_att = torch.softmax(decomp_map, dim=1)
         decomp_att_list = torch.split(decomp_att, 1, dim=1)
         decomp_list = [self.relation(torch.cat([parent * decomp_att_list[i]*parent_att, child_list[i]], dim=1)) for i in
@@ -163,22 +163,22 @@ class Contexture(nn.Module):
         super(Contexture, self).__init__()
         self.hidden_dim =hidden_dim
         self.F_cont = Dep_Context(in_dim, hidden_dim)
-        # self.att_list = nn.ModuleList([nn.Sequential(
-        #     nn.Conv2d(in_dim+1, in_dim, kernel_size=3, padding=1, stride=1, bias=False),
-        #     BatchNorm2d(in_dim), nn.ReLU(inplace=False),
-        #     nn.Conv2d(in_dim, len(part_list_list[i]), kernel_size=1, padding=0, stride=1, bias=True)
-        # ) for i in range(len(part_list_list))])
         self.att_list = nn.ModuleList([nn.Sequential(
+            nn.Conv2d(in_dim+1, in_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(in_dim), nn.ReLU(inplace=False),
             nn.Conv2d(in_dim, len(part_list_list[i]), kernel_size=1, padding=0, stride=1, bias=True)
         ) for i in range(len(part_list_list))])
+        # self.att_list = nn.ModuleList([nn.Sequential(
+        #     nn.Conv2d(in_dim, len(part_list_list[i]), kernel_size=1, padding=0, stride=1, bias=True)
+        # ) for i in range(len(part_list_list))])
 
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, p_att_list, p_fea):
         F_dep_att_list, F_dep_list = self.F_cont(p_fea, p_att_list)
 
-        # att_list = [self.att_list[i](torch.cat([F_dep_att_list[i], p_fea], dim=1)) for i in range(len(p_att_list))]
-        att_list = [self.att_list[i](F_dep_att_list[i]* p_fea) for i in range(len(p_att_list))]
+        att_list = [self.att_list[i](torch.cat([F_dep_att_list[i], p_fea], dim=1)) for i in range(len(p_att_list))]
+        # att_list = [self.att_list[i](F_dep_att_list[i]* p_fea) for i in range(len(p_att_list))]
 
         att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(p_att_list))]
         return F_dep_list, att_list_list, att_list
