@@ -418,7 +418,7 @@ class gnn_loss3(nn.Module):
         loss=[]
         for i in range(len(preds[0])):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_ce = 0.4*self.criterion(pred, targets[0])
+            loss_ce = self.criterion(pred, targets[0])
             pred = F.softmax(input=pred, dim=1)
             loss.append(loss_ce + lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
 
@@ -517,7 +517,7 @@ class gnn_loss3(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return loss[0] + 0.4*loss_hb[0] + 0.4*loss_fb[0] + (sum(loss[1:]) + 0.4*sum(loss_hb[1:]) + 0.4*sum(loss_fb[1:]))/(len(preds[1])-1)+ 0.4 * loss_dsn + 0.2*(loss_fh_att+ loss_up_att + loss_lp_att)/len(preds[3])
+        return (sum(loss[1:]) + 0.4*sum(loss_hb[1:]) + 0.4*sum(loss_fb[1:]))/(len(preds[0]))+ 0.4 * loss_dsn + (loss_fh_att + loss_up_att/(self.cls_h-1) + loss_lp_att/(self.cls_h-1))/(len(preds[3]))
 
 class gnn_loss_dp(nn.Module):
     """Lovasz loss for Alpha process"""
@@ -549,7 +549,7 @@ class gnn_loss_dp(nn.Module):
         loss=[]
         for i in range(len(preds[0])):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_ce = 0.4*self.criterion(pred, targets[0])
+            loss_ce = self.criterion(pred, targets[0])
             pred = F.softmax(input=pred, dim=1)
             loss.append(loss_ce + lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
 
