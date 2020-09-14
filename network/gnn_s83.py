@@ -96,8 +96,8 @@ class Decomposition(nn.Module):
                    )
 
     def forward(self, parent, child_list, parent_att, child_fea):
-        decomp_map = self.decomp_att(torch.cat([parent_att, child_fea], dim=1))
-        # decomp_map = self.decomp_att(parent_att*child_fea)
+        # decomp_map = self.decomp_att(torch.cat([parent_att, child_fea], dim=1))
+        decomp_map = self.decomp_att(parent_att*child_fea)
         decomp_att = torch.softmax(decomp_map, dim=1)
         decomp_att_list = torch.split(decomp_att, 1, dim=1)
         decomp_list = [self.relation(torch.cat([parent * decomp_att_list[i]*parent_att, child_list[i]], dim=1)) for i in
