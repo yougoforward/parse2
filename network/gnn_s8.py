@@ -194,8 +194,6 @@ class Dependency(nn.Module):
         self.relation = nn.Sequential(
             nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=True),
-            nn.Sigmoid()
         )
     def forward(self, hv, hu_context, dep_att_huv):
         message= self.project(hu_context*dep_att_huv)
