@@ -551,7 +551,7 @@ class gnn_loss_dp(nn.Module):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
             loss_ce = self.criterion(pred, targets[0])
             pred = F.softmax(input=pred, dim=1)
-            loss.append(loss_ce + lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
+            loss.append(0.4*loss_ce + lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
 
         # loss = sum(loss)
         # half body
@@ -669,7 +669,7 @@ class gnn_loss_dp(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return (sum(loss) + 0.4*sum(loss_hb) + 0.4*sum(loss_fb))/(len(preds[0]))+ 0.4 * loss_dsn + (loss_fh_att + loss_up_att/(self.cls_h-1) + loss_lp_att/(self.cls_h-1) + loss_dp_att/(self.num_classes-1))/(len(preds[3]))
+        return (sum(loss) + 0.4*sum(loss_hb) + 0.4*sum(loss_fb))/(len(preds[0]))+ 0.4 * loss_dsn + 0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_dp_att)/(len(preds[3]))
         # return loss[0] + 0.4*loss_hb[0] + 0.4*loss_fb[0] + (sum(loss[1:]) + 0.4*sum(loss_hb[1:]) + 0.4*sum(loss_fb[1:]))/(len(preds[1])-1)+ 0.4 * loss_dsn
 
 class bce_gnn_loss(nn.Module):
