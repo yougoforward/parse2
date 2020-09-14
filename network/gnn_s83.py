@@ -93,6 +93,8 @@ class Decomposition(nn.Module):
         self.relation = nn.Sequential(
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
                    )
 
     def forward(self, parent, child_list, parent_att, child_fea):
@@ -192,6 +194,8 @@ class Dependency(nn.Module):
         self.relation = nn.Sequential(
             nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
     def forward(self, hv, hu_context, dep_att_huv):
         message= self.project(hu_context*dep_att_huv)
@@ -203,7 +207,10 @@ class Full_Graph(nn.Module):
         super(Full_Graph, self).__init__()
         self.cls_f = cls_f
         self.comp_full = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
-                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+                                   nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+                                   )
         
         self.update = nn.ModuleList([ConvGRU(hidden_dim,hidden_dim,(1,1)) for i in range(cls_f)])
 
@@ -230,9 +237,13 @@ class Half_Graph(nn.Module):
         self.lower_parts_len = len(lower_part_list)
         self.decomp_f = Decomposition(in_dim, hidden_dim, 2)
         self.comp_u = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
-                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+                                   nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
         self.comp_l = nn.Sequential(nn.Conv2d(2*hidden_dim, hidden_dim, kernel_size=3, padding=1, bias=False),
-                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
+                                   BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+                                   nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False))
 
         self.update = nn.ModuleList([ConvGRU(hidden_dim,hidden_dim,(1,1)) for i in range(cls_h)])
 
