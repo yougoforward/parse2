@@ -164,7 +164,7 @@ class Dep_Context(nn.Module):
             energy = torch.bmm(key, query)  # n,hw,hw
             attention = torch.sum(torch.softmax(energy, dim=-1), dim=-1) #n,hw
             
-            attention = F.interpolate(attention, (h,w), mode = 'bilinear', align_corners=True).view(n,1,h,w)*hu_att_list[i]
+            attention = F.interpolate(attention.view(n,1,hp,wp), (h,w), mode = 'bilinear', align_corners=True)*hu_att_list[i]
 
             co_context = attention*p_fea0*(1-hu_att_list[i])
             co_context = self.project[i](co_context)
