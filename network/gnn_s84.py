@@ -160,7 +160,7 @@ class Dep_Context(nn.Module):
         dep_cont = []
         dep_cont_att = []
         for i in range(len(hu_att_list)):
-            query = self.query_conv(p_fea_coord*self.pool(hu_att_list[i])).view(n, -1, h*w) # n, c, hw 
+            query = self.query_conv(p_fea_coord*self.pool(hu_att_list[i])).view(n, -1, hp*wp) # n, c, hw 
             energy = torch.bmm(key, query)  # n,hw,hw
             attention = torch.sum(torch.softmax(energy, dim=-1)*hu_att_list[i].view(n,1,-1), dim=-1) #n,hw
             
