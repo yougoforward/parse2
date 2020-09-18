@@ -644,6 +644,20 @@ class gnn_loss_dp(nn.Module):
             loss_lp_att.append(self.criterion2(pred_lp, targets_lp))
         loss_lp_att = sum(loss_lp_att)
 
+
+        # comp_f, comp_u, comp_l, bce loss
+        com_full_onehot = one_hot_fb_list[1].float().unsqueeze(1)
+        com_u_onehot = one_hot_hb_list[1].float().unsqueeze(1)
+        com_l_onehot = one_hot_hb_list[2].float().unsqueeze(1)
+        com_onehot = torch.cat([com_full_onehot,com_u_onehot, com_l_onehot], dim=1)
+        loss_com_att = []
+        for i in range(len(preds[6])):
+            pred_com_full = F.interpolate(input=preds[6][i], size=(h, w), mode='bilinear', align_corners=True)
+            pred_com_u = F.interpolate(input=preds[7][i], size=(h, w), mode='bilinear', align_corners=True)
+            pred_com_l = F.interpolate(input=preds[8][i], size=(h, w), mode='bilinear', align_corners=True)
+            loss_com_att.append(self.bceloss(torch.cat([pred_com_full, pred_com_u, pred_com_l], dim=1)[valid.expand(n, 3, h, w)], com_onehot[valid.expand(n, 3, h, w)].float()))
+        loss_com_att = sum(loss_com_att)
+        
         # dependency decomposition
         # loss_context_att =[]
         loss_dp_att = []
