@@ -162,11 +162,11 @@ class Dep_Context(nn.Module):
         for i in range(len(hu_att_list)):
             query = self.query_conv(p_fea_coord*self.pool(hu_att_list[i])).view(n, -1, hp*wp) # n, c, hw 
             energy = torch.bmm(key, query)  # n,hw,hw
-            attention = torch.sum(torch.softmax(energy, dim=-1)*hu_att_list[i].view(n,1,-1), dim=-1) #n,hw
+            attention = torch.sum(torch.softmax(energy, dim=-1), dim=-1) #n,hw
             
-            attention = F.interpolate(attention, (h,w), mode = 'bilinear', align_corners=True)
+            attention = F.interpolate(attention, (h,w), mode = 'bilinear', align_corners=True).view(n,1,h,w)*hu_att_list[i]
 
-            co_context = attention.view(n,1,h,w)*p_fea0*(1-hu_att_list[i])
+            co_context = attention*p_fea0*(1-hu_att_list[i])
             co_context = self.project[i](co_context)
             dep_cont.append(co_context)
             dep_cont_att.append(attention.view(n,1,h,w)*(1-hu_att_list[i]))
