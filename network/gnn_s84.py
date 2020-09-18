@@ -146,23 +146,27 @@ class Dep_Context(nn.Module):
             nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         ) for i in range(parts_num)])
-        # self.pool = nn.MaxPool2d(2)
+        self.pool = nn.MaxPool2d(2)
     def forward(self, p_fea, hu_att_list):
         n, c, h, w = p_fea.size()
-        # p_fea = self.pool(p_fea)
+        p_fea0 = p_fea
+        p_fea = self.pool(p_fea)
         n, c, hp, wp = p_fea.size()
+        
         coord_fea = torch.from_numpy(generate_spatial_batch(hp,wp))
         coord_fea = coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).permute(0,3,1,2)
         p_fea_coord = torch.cat([p_fea, coord_fea], dim=1)
-        key = self.key_conv(p_fea_coord).view(n, -1, h*w).permute(0,2,1) # n, hw, c
+        key = self.key_conv(p_fea_coord).view(n, -1, hp*wp).permute(0,2,1) # n, hw, c
         dep_cont = []
         dep_cont_att = []
         for i in range(len(hu_att_list)):
-            query = self.query_conv(p_fea_coord*hu_att_list[i]).view(n, -1, h*w) # n, c, hw 
+            query = self.query_conv(p_fea_coord*self.pool(hu_att_list[i])).view(n, -1, h*w) # n, c, hw 
             energy = torch.bmm(key, query)  # n,hw,hw
             attention = torch.sum(torch.softmax(energy, dim=-1)*hu_att_list[i].view(n,1,-1), dim=-1) #n,hw
+            
+            attention = F.interpolate(attention, (h,w), mode = 'bilinear', align_corners=True)
 
-            co_context = attention.view(n,1,h,w)*p_fea*(1-hu_att_list[i])
+            co_context = attention.view(n,1,h,w)*p_fea0*(1-hu_att_list[i])
             co_context = self.project[i](co_context)
             dep_cont.append(co_context)
             dep_cont_att.append(attention.view(n,1,h,w)*(1-hu_att_list[i]))
