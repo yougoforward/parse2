@@ -134,17 +134,24 @@ def generate_spatial_batch(featmap_H, featmap_W):
 
 
 class Dep_Context(nn.Module):
-    def __init__(self, in_dim=256, hidden_dim=10):
+    def __init__(self, in_dim=256, hidden_dim=10, parts_num = 6):
         super(Dep_Context, self).__init__()
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
 
-        self.query_conv = nn.Sequential(nn.Conv2d(in_dim+8, 64, 1, bias=True), BatchNorm2d(64), nn.ReLU(inplace=False))
-        self.key_conv = nn.Sequential(nn.Conv2d(in_dim+8, 64, 1, bias=True), BatchNorm2d(64), nn.ReLU(inplace=False))
-
+        self.query_conv = nn.Sequential(nn.Conv2d(in_dim+8, 64, 1, bias=True))
+        self.key_conv = nn.Sequential(nn.Conv2d(in_dim+8, 64, 1, bias=True))
+        
+        self.project = nn.ModuleList([nn.Sequential(
+            nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+        ) for i in range(parts_num)])
+        # self.pool = nn.MaxPool2d(2)
     def forward(self, p_fea, hu_att_list):
         n, c, h, w = p_fea.size()
-        coord_fea = torch.from_numpy(generate_spatial_batch(h,w))
+        # p_fea = self.pool(p_fea)
+        n, c, hp, wp = p_fea.size()
+        coord_fea = torch.from_numpy(generate_spatial_batch(hp,wp))
         coord_fea = coord_fea.to(p_fea.device).repeat((n, 1, 1, 1)).permute(0,3,1,2)
         p_fea_coord = torch.cat([p_fea, coord_fea], dim=1)
         key = self.key_conv(p_fea_coord).view(n, -1, h*w).permute(0,2,1) # n, hw, c
@@ -156,38 +163,36 @@ class Dep_Context(nn.Module):
             attention = torch.sum(torch.softmax(energy, dim=-1)*hu_att_list[i].view(n,1,-1), dim=-1) #n,hw
 
             co_context = attention.view(n,1,h,w)*p_fea*(1-hu_att_list[i])
+            co_context = self.project[i](co_context)
             dep_cont.append(co_context)
-        return dep_cont
+            dep_cont_att.append(attention.view(n,1,h,w)*(1-hu_att_list[i]))
+        return dep_cont, dep_cont_att
 
 
 class Contexture(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10, part_list_list=None):
         super(Contexture, self).__init__()
         self.hidden_dim =hidden_dim
-        self.F_cont = Dep_Context(in_dim, hidden_dim)
+        self.F_cont = Dep_Context(in_dim, hidden_dim, len(part_list_list))
 
         self.att_list = nn.ModuleList([nn.Sequential(
-            nn.Conv2d(in_dim, len(part_list_list[i]), kernel_size=1, padding=0, stride=1, bias=True)
+            nn.Conv2d(hidden_dim, len(part_list_list[i]), kernel_size=1, padding=0, stride=1, bias=True)
         ) for i in range(len(part_list_list))])
 
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, p_att_list, p_fea):
-        F_dep_list = self.F_cont(p_fea, p_att_list)
+        F_dep_list, F_dep_att_list = self.F_cont(p_fea, p_att_list)
 
         att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(p_att_list))]
 
-        att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(p_att_list))]
+        att_list_list = [list(torch.split(self.softmax(att_list[i])*F_dep_att_list[i], 1, dim=1)) for i in range(len(p_att_list))]
         return F_dep_list, att_list_list, att_list
 
 
 class Dependency(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10):
         super(Dependency, self).__init__()
-        self.project = nn.Sequential(
-            nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
-        )
         self.relation = nn.Sequential(
             nn.Conv2d(2*hidden_dim, 2*hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
@@ -195,8 +200,7 @@ class Dependency(nn.Module):
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
     def forward(self, hv, hu_context, dep_att_huv):
-        message= self.project(hu_context*dep_att_huv)
-        dep_message = self.relation(torch.cat([message, hv], dim=1))
+        dep_message = self.relation(torch.cat([hu_context*dep_att_huv, hv], dim=1))
         return dep_message
     
 class Full_Graph(nn.Module):
