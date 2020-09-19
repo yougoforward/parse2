@@ -14,29 +14,16 @@ class DecoderModule(nn.Module):
     
     def __init__(self, num_classes):
         super(DecoderModule, self).__init__()
-        
         self.conv0 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
                                    BatchNorm2d(256), nn.ReLU(inplace=False))
-        self.conv01 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=1, padding=0, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False))
-        self.conv1 = nn.Sequential(nn.Conv2d(512, 256, kernel_size=3, padding=1, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False),
-                                   nn.Conv2d(256, 256, kernel_size=1, padding=0, stride=1, bias=False),
-                                   BatchNorm2d(256), nn.ReLU(inplace=False)
-                                   )
         self.se = nn.Sequential(nn.AdaptiveAvgPool2d(1),
                             nn.Conv2d(256, 256, 1, bias=False),
                             nn.ReLU(True),
                             nn.Conv2d(256, 256, 1, bias=True),
                             nn.Sigmoid())
-        # self.pred_conv = nn.Sequential(nn.Dropout2d(0.1), nn.Conv2d(256, num_classes, kernel_size=1, padding=0, dilation=1, bias=True))
-
-    def forward(self, x, xm):
-        skip=self.conv0(xm)
-        xp = self.conv01(x)
-        out = self.conv1(torch.cat([skip, xp], dim=1))
+    def forward(self, x):
+        out=self.conv0(x)
         out = out + self.se(out)*out
-        # out = self.pred_conv(out)
         return out
 
 
@@ -107,7 +94,7 @@ class Decoder(nn.Module):
         
         # infer with hierarchical person graph
         self.gnn_infer = GNN_infer(adj_matrix=self.adj_matrix, upper_half_node=[1, 2, 3, 4], lower_half_node=[5, 6],
-                                   in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2)
+                                   in_dim=256, hidden_dim=32, cls_p=7, cls_h=3, cls_f=2)
         # aux layer
         self.layer_dsn = nn.Sequential(nn.Conv2d(1024, 256, kernel_size=3, stride=1, padding=1),
                                        BatchNorm2d(256), nn.ReLU(inplace=False),
@@ -118,11 +105,11 @@ class Decoder(nn.Module):
         _,_,h,w = x[1].size()
         context = self.layer5(x[-1])
         context = F.interpolate(context, size=(h, w), mode='bilinear', align_corners=True)
-        # context = self.fuse(torch.cat([self.skip(x[1]), context], dim=1))
+        context = self.fuse(torch.cat([self.skip(x[1]), context], dim=1))
 
-        p_fea = self.layer_part(context, x[1])
-        h_fea = self.layer_half(context, x[1])
-        f_fea = self.layer_full(context, x[1])
+        p_fea = self.layer_part(context)
+        h_fea = self.layer_half(context)
+        f_fea = self.layer_full(context)
 
         # gnn infer
         p_seg, h_seg, f_seg, decomp_map_f, decomp_map_u, decomp_map_l, comp_map_f, comp_map_u, comp_map_l, \

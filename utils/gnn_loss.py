@@ -551,7 +551,7 @@ class gnn_loss_dp(nn.Module):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
             loss_ce = self.criterion(pred, targets[0])
             pred = F.softmax(input=pred, dim=1)
-            loss.append(0.5*loss_ce + lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
+            loss.append(loss_ce + lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
 
         # loss = sum(loss)
         # half body
