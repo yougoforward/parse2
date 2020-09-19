@@ -427,7 +427,7 @@ class GNN_infer(nn.Module):
         h_att_list = list(torch.split(torch.softmax(h_seg[0], 1), 1, dim=1))
         p_att_list = list(torch.split(torch.softmax(p_seg[0], 1), 1, dim=1))
 
-        for iter in range(2):
+        for iter in range(1):
             # gnn infer
             p_node_list_new, h_node_list_new, f_node_list_new, decomp_att_fh_new, decomp_att_up_new, decomp_att_lp_new, comp_f_att_new, comp_u_att_new, comp_l_att_new, Fdep_att_list_new = self.gnn(p_node_list, h_node_list, f_node_list, xp, xh, xf, p_att_list, h_att_list, f_att_list)
             # node supervision new

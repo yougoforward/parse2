@@ -687,7 +687,7 @@ class gnn_loss_dp(nn.Module):
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
-        return (sum(loss) + 0.4*sum(loss_hb) + 0.4*sum(loss_fb))/(len(preds[0]))+ 0.4 * loss_dsn + 0.2*(loss_fh_att + loss_up_att + loss_lp_att + loss_dp_att + loss_com_att)/(len(preds[3]))
+        return (sum(loss) + 0.4*sum(loss_hb) + 0.4*sum(loss_fb))/(len(preds[0]))+ 0.4 * loss_dsn + 0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_dp_att + loss_com_att)/(len(preds[3]))
 
 class bce_gnn_loss(nn.Module):
     """Lovasz loss for Alpha process"""
