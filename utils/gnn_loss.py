@@ -748,13 +748,14 @@ class gnn_loss_dp2(nn.Module):
             # one_hot_fb_list[i][targets[2]==255]=255
         
         # seg loss
+        one_hot_lab_p = one_hot_lab_p.permute(0, 3, 1, 2).float()
         loss=[]
         for i in range(len(preds[0])):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
             # loss_ce = self.criterion(pred, targets[0])
-            loss_ce = torch.sum(-F.log_softmax(pred, 1)*one_hot_lab_p.float(), dim=1)
+            loss_ce = torch.sum(-F.log_softmax(pred, 1)*one_hot_lab_p, dim=1)
             logit = F.softmax(input=pred, dim=1)
-            pt1 = torch.sum(logit*one_hot_lab_p.float(), dim=1)
+            pt1 = torch.sum(logit*one_hot_lab_p, dim=1)
             fl_weight1 = 1.0*(1-pt1)**2.0
             loss_ce = fl_weight1*loss_ce
             loss_ce = torch.mean(loss_ce[valid])
