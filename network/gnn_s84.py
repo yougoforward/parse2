@@ -396,7 +396,7 @@ class GNN_infer(nn.Module):
             BatchNorm2d(hidden_dim * cls_f), nn.ReLU(inplace=False))
 
         # gnn infer
-        self.gnn = nn.MouduleList([GNN(adj_matrix, upper_half_node, lower_half_node, self.in_dim, self.hidden_dim, self.cls_p,
+        self.gnn = nn.ModuleList([GNN(adj_matrix, upper_half_node, lower_half_node, self.in_dim, self.hidden_dim, self.cls_p,
                        self.cls_h, self.cls_f) for i in range(2)])
 
         # node supervision
