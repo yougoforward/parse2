@@ -397,7 +397,7 @@ class GNN_infer(nn.Module):
 
         # gnn infer
         self.gnn = nn.MouduleList([GNN(adj_matrix, upper_half_node, lower_half_node, self.in_dim, self.hidden_dim, self.cls_p,
-                       self.cls_h, self.cls_f) for i in range(2)]
+                       self.cls_h, self.cls_f) for i in range(2)])
 
         # node supervision
         self.node_seg = nn.Conv2d(hidden_dim, 1, 1)
