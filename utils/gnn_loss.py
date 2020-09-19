@@ -755,7 +755,7 @@ class gnn_loss_dp2(nn.Module):
             # loss_ce = self.criterion(pred, targets[0])
             loss_ce = torch.sum(-F.log_softmax(pred, 1)*one_hot_lab_p, dim=1, keepdim=True)
             logit = F.softmax(input=pred, dim=1)
-            pt1 = torch.sum(logit*one_hot_lab_p, dim=1)
+            pt1 = torch.sum(logit*one_hot_lab_p, dim=1, keepdim=True)
             fl_weight1 = 1.0*(1-pt1)**2.0
             loss_ce = fl_weight1*loss_ce
             loss_ce = torch.mean(loss_ce[valid])
