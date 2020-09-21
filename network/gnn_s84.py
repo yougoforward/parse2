@@ -100,8 +100,8 @@ class Decomposition(nn.Module):
         decomp_map = self.decomp_att(torch.cat([parent]+child_list, dim=1))
         decomp_att = torch.softmax(decomp_map, dim=1)
         decomp_att_list = torch.split(decomp_att, 1, dim=1)
-        decomp_list = [self.relu(self.relation(torch.cat([child_list[i], parent * decomp_att_list[i]*parent_att], dim=1)) for i in
-                          range(len(child_list)) + child_list[i])]
+        decomp_list = [self.relu(self.relation(torch.cat([child_list[i], parent * decomp_att_list[i]*parent_att], dim=1)) + child_list[i]) for i in
+                          range(len(child_list))]
         return decomp_list, decomp_map
 
 def generate_spatial_batch(featmap_H, featmap_W):
