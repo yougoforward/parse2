@@ -66,10 +66,11 @@ class Composition(nn.Module):
     def __init__(self, hidden_dim, parts_num):
         super(Composition, self).__init__()
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim)
+            nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+            BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
-        self.relu = nn.ReLU(inplace=False)
         self.comp_att = nn.Sequential(
             nn.Conv2d(parts_num * hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
             nn.Sigmoid()
@@ -78,7 +79,6 @@ class Composition(nn.Module):
     def forward(self, parent, child_list):
         comp_att = self.comp_att(torch.cat(child_list, dim=1))
         comp_message = self.relation(torch.cat([parent, sum(child_list) * comp_att], dim=1))
-        comp_message = self.relu(comp_message+parent)
         return comp_message, comp_att
     
 class Decomposition(nn.Module):
@@ -89,18 +89,17 @@ class Decomposition(nn.Module):
         )
 
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim)
+            nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+            BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
-        self.relu = nn.ReLU(inplace=False)
 
     def forward(self, parent, child_list, parent_att):
         decomp_map = self.decomp_att(torch.cat([parent]+child_list, dim=1))
         decomp_att = torch.softmax(decomp_map, dim=1)
         decomp_att_list = torch.split(decomp_att, 1, dim=1)
         decomp_list = [self.relation(torch.cat([child_list[i], parent * decomp_att_list[i]*parent_att], dim=1)) for i in
-                          range(len(child_list))]
-        decomp_list = [self.relu(decomp_list[i]+child_list[i]) for i in
                           range(len(child_list))]
         return decomp_list, decomp_map
 
@@ -186,13 +185,13 @@ class Dependency(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10):
         super(Dependency, self).__init__()
         self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim)
+            nn.Conv2d(2 * hidden_dim, 2*hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
+            BatchNorm2d(2*hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
-        self.relu = nn.ReLU(inplace=False)
     def forward(self, hv, hu_context, dep_att_huv):
         dep_message = self.relation(torch.cat([hu_context*dep_att_huv, hv], dim=1))
-        dep_message = self.relu(dep_message+hv)
         return dep_message
     
 class Full_Graph(nn.Module):
