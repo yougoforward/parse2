@@ -78,14 +78,14 @@ class Composition(nn.Module):
         
     def forward(self, parent, child_list):
         comp_att = self.comp_att(torch.cat(child_list, dim=1))
-        comp_message = self.relation(torch.cat([parent, sum(child_list) * comp_att], dim=1))
+        comp_message = sum([self.relation(torch.cat([parent, child * comp_att], dim=1)) for child in child_list])
         return comp_message, comp_att
     
 class Decomposition(nn.Module):
     def __init__(self, hidden_dim=10, child_num=2):
         super(Decomposition, self).__init__()
         self.decomp_att = nn.Sequential(
-            nn.Conv2d((child_num+1)*hidden_dim, child_num, kernel_size=1, padding=0, stride=1, bias=True)
+            nn.Conv2d(hidden_dim, child_num, kernel_size=1, padding=0, stride=1, bias=True)
         )
 
         self.relation = nn.Sequential(
@@ -96,7 +96,7 @@ class Decomposition(nn.Module):
         )
 
     def forward(self, parent, child_list, parent_att):
-        decomp_map = self.decomp_att(torch.cat([parent]+child_list, dim=1))
+        decomp_map = self.decomp_att(parent)
         decomp_att = torch.softmax(decomp_map, dim=1)
         decomp_att_list = torch.split(decomp_att, 1, dim=1)
         decomp_list = [self.relation(torch.cat([child_list[i], parent * decomp_att_list[i]*parent_att], dim=1)) for i in
