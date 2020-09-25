@@ -919,7 +919,7 @@ class gnn_loss_dp4(nn.Module):
         for i in range(len(preds[2])):
             pred_fb = F.interpolate(input=preds[2][i], size=(h, w), mode='bilinear', align_corners=True)
             if i==0:
-                loss_ce = self.criterion(pred_fb, targets[2].long())
+                loss_ce = self.criterion2(pred_fb, targets[2].long())
             else:
                 loss_ce = 0
             pred_fb = F.softmax(input=pred_fb, dim=1)
