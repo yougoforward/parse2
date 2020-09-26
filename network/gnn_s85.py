@@ -165,15 +165,18 @@ class Contexture(nn.Module):
         self.att_list = nn.ModuleList([nn.Sequential(
             nn.Conv2d(hidden_dim, len(part_list_list[i]), kernel_size=1, padding=0, stride=1, bias=True)
         ) for i in range(len(part_list_list))])
-
+        self.F_dep_att_list = nn.ModuleList([nn.Sequential(
+            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True), nn.Sigmoid()
+        ) for i in range(len(part_list_list))])
+        self.part_list_list = part_list_list
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, p_list, p_fea):
-        F_dep_list = self.F_cont(p_fea, p_att_list)
-
+        F_dep_list = self.F_cont(p_fea, p_list)
+        F_dep_att_list = [self.F_dep_att_list[i](F_dep_list[i]) for i in range(len(p_list))]
         att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(p_list))]
-
-        att_list_list = [list(torch.split(self.softmax(att_list[i]), 1, dim=1)) for i in range(len(p_att_list))]
+        
+        att_list_list = [list(torch.split(F_dep_att_list[i]*self.softmax(att_list[i]), 1, dim=1)) for i in range(len(p_att_list))]
         return F_dep_list, att_list_list, att_list
 
 
@@ -296,7 +299,7 @@ class Part_Graph(nn.Module):
         decomp_l_list, decomp_l_att = self.decomp_l(h_node_list[2], lower_parts, h_node_att_list[2])
         
         # dependency
-        F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(p_node_att_list[1:], xp)
+        F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(p_node_list[1:], xp)
         xpp_list_list = [[] for i in range(self.cls_p - 1)]
         for i in range(self.edge_index_num):
             xpp_list_list[self.edge_index[i, 1]].append(
