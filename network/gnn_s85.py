@@ -146,7 +146,7 @@ class Dep_Context(nn.Module):
         p_fea_coord = torch.cat([p_fea, coord_fea], dim=1)
         key = self.key_conv(p_fea_coord).view(n, -1, hp*wp) # n, hpwp, c+8
         dep_cont = []
-        for i in range(len(hu_att_list)):
+        for i in range(len(hu_list)):
             # query = self.query_conv(p_fea_coord*self.pool(hu_att_list[i])).view(n, -1, hp*wp) # n, c, hw 
             query = torch.cat([self.pool(hu_list[i]), coord_fea], dim=1).view(n, -1, hp*wp).permute(0,2,1) # n, hpwp, c+8,
             energy = torch.bmm(query, key)  # n,hpwp,hpwp
