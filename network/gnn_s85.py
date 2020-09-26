@@ -176,7 +176,7 @@ class Contexture(nn.Module):
         F_dep_att_list = [self.F_dep_att_list[i](F_dep_list[i]) for i in range(len(p_list))]
         att_list = [self.att_list[i](F_dep_list[i]) for i in range(len(p_list))]
         
-        att_list_list = [list(torch.split(F_dep_att_list[i]*self.softmax(att_list[i]), 1, dim=1)) for i in range(len(p_att_list))]
+        att_list_list = [list(torch.split(F_dep_att_list[i]*self.softmax(att_list[i]), 1, dim=1)) for i in range(len(p_list))]
         return F_dep_list, att_list_list, att_list
 
 
