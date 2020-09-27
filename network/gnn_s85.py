@@ -151,6 +151,7 @@ class Dep_Context(nn.Module):
             query = torch.cat([self.pool(hu_list[i]), coord_fea], dim=1).view(n, -1, hp*wp).permute(0,2,1) # n, hpwp, c+8,
             energy = torch.bmm(query, key)  # n,hpwp,hpwp
             co_context = torch.bmm(energy,p_fea.view(n, -1, hp*wp).permute(0,2,1)).permute(0,2,1).view(n, -1, hp, wp)
+            co_context = F.interpolate(co_context, (h,w), mode = 'bilinear', align_corners=True)
             co_context = self.project[i](co_context)
             dep_cont.append(co_context)
         return dep_cont
