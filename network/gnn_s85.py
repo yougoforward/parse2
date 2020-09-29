@@ -85,6 +85,9 @@ class Decomposition(nn.Module):
         self.decomp_att = nn.Sequential(
             nn.Conv2d(hidden_dim, child_num, kernel_size=1, padding=0, stride=1, bias=True)
         )
+        self.parent_att = nn.Sequential(
+            nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True), nn.Sigmoid()
+        )
 
         self.relation = nn.Sequential(
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
@@ -95,6 +98,7 @@ class Decomposition(nn.Module):
         decomp_map = self.decomp_att(parent)
         decomp_att = torch.softmax(decomp_map, dim=1)
         decomp_att_list = torch.split(decomp_att, 1, dim=1)
+        parent_att = self.parent_att(parent)
         decomp_list = [self.relation(torch.cat([child_list[i], parent * decomp_att_list[i]*parent_att], dim=1)) for i in
                           range(len(child_list))]
         return decomp_list, decomp_map
