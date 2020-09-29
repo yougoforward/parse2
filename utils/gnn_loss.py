@@ -729,7 +729,7 @@ class gnn_loss_dp3(nn.Module):
         loss_hb = []
         for i in range(len(preds[1])):
             pred_hb = F.interpolate(input=preds[1][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_ce = self.criterion(pred_hb, targets[1].long())
+            loss_ce = self.criterion2(pred_hb, targets[1].long())
             pred_hb = F.softmax(input=pred_hb, dim=1)
             loss_hb.append(0.4*loss_ce + lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
                                       only_present=self.only_present))
@@ -740,7 +740,7 @@ class gnn_loss_dp3(nn.Module):
         loss_fb = []
         for i in range(len(preds[2])):
             pred_fb = F.interpolate(input=preds[2][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_ce = self.criterion(pred_fb, targets[2].long())
+            loss_ce = self.criterion2(pred_fb, targets[2].long())
             pred_fb = F.softmax(input=pred_fb, dim=1)
             loss_fb.append(0.4*loss_ce + lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
                                       only_present=self.only_present))
