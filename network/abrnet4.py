@@ -6,7 +6,7 @@ from torch.nn import functional as F
 
 from inplace_abn.bn import InPlaceABNSync
 from modules.com_mod import Bottleneck, ResGridNet, SEModule
-from modules.parse_mod import MagicModule, ASPPModule
+from modules.parse_mod import ASPPModule
 
 BatchNorm2d = functools.partial(InPlaceABNSync, activation='none')
 class DecoderModule(nn.Module):
