@@ -306,8 +306,8 @@ class Part_Graph(nn.Module):
 
         # decomposition
         p_node_list_new = []
-        decomp_u_list, decomp_u_att = self.decomp_u(h_node_list[1], upper_parts, h_node_att_list[1])
-        decomp_l_list, decomp_l_att = self.decomp_l(h_node_list[2], lower_parts, h_node_att_list[2])
+        decomp_u_list, decomp_u_att = self.decomp_u(h_node_list[1], upper_parts)
+        decomp_l_list, decomp_l_att = self.decomp_l(h_node_list[2], lower_parts)
         
         # dependency
         F_dep_list, att_list_list, Fdep_att_list = self.F_dep_list(p_node_list[1:], xp)
