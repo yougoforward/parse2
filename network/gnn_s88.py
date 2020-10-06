@@ -108,8 +108,6 @@ class Composition(nn.Module):
         super(Composition, self).__init__()
         self.relation = nn.Sequential(
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
         self.comp_att = nn.Sequential(
@@ -135,8 +133,6 @@ class Decomposition(nn.Module):
 
         self.relation = nn.Sequential(
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
         
@@ -174,9 +170,7 @@ class Dep_Context(nn.Module):
         self.hidden_dim = hidden_dim
         self.corrd_conv = nn.Sequential(
             nn.Conv2d(8, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
         self.query_conv = nn.Sequential(nn.Conv2d(hidden_dim+hidden_dim, hidden_dim, 1, bias=False))
         self.key_conv = nn.Sequential(nn.Conv2d(in_dim+hidden_dim, hidden_dim, 1, bias=False))
@@ -243,8 +237,6 @@ class Dependency(nn.Module):
         super(Dependency, self).__init__()
         self.relation = nn.Sequential(
             nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
             BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         )
     def forward(self, hv, huv_context):

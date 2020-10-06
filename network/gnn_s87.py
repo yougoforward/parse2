@@ -168,10 +168,7 @@ class Dep_Context(nn.Module):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
         self.corrd_conv = nn.Sequential(
-            nn.Conv2d(8, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
-            nn.Conv2d(hidden_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(8, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False)
         )
         self.query_conv = nn.Sequential(nn.Conv2d(hidden_dim+hidden_dim, hidden_dim, 1, bias=False))
         self.key_conv = nn.Sequential(nn.Conv2d(in_dim+hidden_dim, hidden_dim, 1, bias=False))
