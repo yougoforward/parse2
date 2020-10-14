@@ -43,8 +43,8 @@ class ConvGRU(nn.Module):
         cc_cnm = self.conv_can(combined)
         cnm = torch.tanh(cc_cnm)
 
-        # h_next = (1 - update_gate) * h_cur + update_gate * cnm
-        h_next = h_cur + update_gate * cnm
+        h_next = (1 - update_gate) * h_cur + update_gate * cnm
+        # h_next = h_cur + update_gate * cnm
         return h_next
     
 class DecoderModule(nn.Module):
@@ -103,13 +103,27 @@ class AlphaDecoder(nn.Module):
         # output = self.cls_hb(output)
         return output
     
+class Relation(nn.Module):
+    def __init__(self, hidden_dim):
+        super(Relation, self).__init__()
+        self.relation = nn.Sequential(
+            nn.Conv2d(2 * hidden_dim, hidden_dim//2, kernel_size=3, padding=1, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False),
+            nn.Conv2d(hidden_dim//2, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
+            BatchNorm2d(hidden_dim), 
+        )
+        self.relu = nn.ReLU(inplace=False)
+        
+    def forward(self, node, message):
+        out = self.relation(torch.cat([node, message], dim=1))
+        out =self.relu(node+out)
+        return out
+    
+       
 class Composition(nn.Module):
     def __init__(self, hidden_dim, parts_num):
         super(Composition, self).__init__()
-        self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
-        )
+        self.relation = Relation(hidden_dim)
         self.comp_att = nn.Sequential(
             nn.Conv2d(parts_num * hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True),
             nn.Sigmoid()
@@ -118,7 +132,7 @@ class Composition(nn.Module):
     def forward(self, parent, child_list):
         comp_att = self.comp_att(torch.cat(child_list, dim=1))
         # comp_message = sum([self.relation(torch.cat([parent, child * comp_att], dim=1)) for child in child_list])
-        comp_message = self.relation(torch.cat([parent, sum(child_list) * comp_att], dim=1))
+        comp_message = self.relation(parent, sum(child_list) * comp_att)
         return comp_message, comp_att
     
 class Decomposition(nn.Module):
@@ -131,10 +145,7 @@ class Decomposition(nn.Module):
             nn.Conv2d(hidden_dim, 1, kernel_size=1, padding=0, stride=1, bias=True), nn.Sigmoid()
         )
 
-        self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
-        )
+        self.relation = nn.ModuleList([Relation(hidden_dim) for i in range(child_num)])
         
 
     def forward(self, parent, child_list):
@@ -142,7 +153,7 @@ class Decomposition(nn.Module):
         decomp_att = torch.softmax(decomp_map, dim=1)
         decomp_att_list = torch.split(decomp_att, 1, dim=1)
         parent_att = self.parent_att(parent)
-        decomp_list = [self.relation(torch.cat([child_list[i], parent * decomp_att_list[i]*parent_att], dim=1)) for i in
+        decomp_list = [self.relation(child_list[i], parent * decomp_att_list[i]*parent_att) for i in
                           range(len(child_list))]
         return decomp_list, decomp_map
 
@@ -169,15 +180,15 @@ class Dep_Context(nn.Module):
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
         self.corrd_conv = nn.Sequential(
-            nn.Conv2d(8, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
+            nn.Conv2d(8, hidden_dim, kernel_size=1, padding=0, stride=1, bias=True)
         )
-        self.query_conv = nn.Sequential(nn.Conv2d(hidden_dim+hidden_dim, hidden_dim, 1, bias=False))
-        self.key_conv = nn.Sequential(nn.Conv2d(in_dim+hidden_dim, hidden_dim, 1, bias=False))
+        self.query_conv = nn.Sequential(nn.Conv2d(hidden_dim+hidden_dim, hidden_dim, 1, bias=True))
+        self.key_conv = nn.Sequential(nn.Conv2d(in_dim+hidden_dim, hidden_dim, 1, bias=True))
         # self.project = nn.Sequential(
         #     nn.Conv2d(in_dim, hidden_dim, kernel_size=1, padding=0, stride=1, bias=False),
         #     BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
         # )
+        self.query_conv = nn.ModuleList([self.query_conv for i in range(parts_num)])
         
         
         self.project = nn.ModuleList([nn.Sequential(
@@ -199,7 +210,7 @@ class Dep_Context(nn.Module):
         dep_cont = []
         for i in range(len(hu_list)):
             # query = self.query_conv(p_fea_coord*self.pool(hu_att_list[i])).view(n, -1, hp*wp) # n, c, hw 
-            query = self.query_conv(torch.cat([self.pool(hu_list[i]), coord_fea], dim=1)).view(n, -1, hp*wp).permute(0,2,1) # n, hpwp, c+8,
+            query = self.query_conv[i](torch.cat([self.pool(hu_list[i]), coord_fea], dim=1)).view(n, -1, hp*wp).permute(0,2,1) # n, hpwp, c+8,
             energy = torch.bmm(query, key)  # n,hpwp,hpwp
             co_context = torch.bmm(energy,p_fea.view(n, -1, hp*wp).permute(0,2,1)).permute(0,2,1).view(n, -1, hp, wp)
             co_context = F.interpolate(co_context, (h,w), mode = 'bilinear', align_corners=True)
@@ -235,12 +246,9 @@ class Contexture(nn.Module):
 class Dependency(nn.Module):
     def __init__(self, in_dim=256, hidden_dim=10):
         super(Dependency, self).__init__()
-        self.relation = nn.Sequential(
-            nn.Conv2d(2 * hidden_dim, hidden_dim, kernel_size=3, padding=1, stride=1, bias=False),
-            BatchNorm2d(hidden_dim), nn.ReLU(inplace=False)
-        )
+        self.relation = Relation(hidden_dim)
     def forward(self, hv, huv_context):
-        dep_message = self.relation(torch.cat([huv_context, hv], dim=1))
+        dep_message = self.relation(hv, huv_context)
         return dep_message
     
 class Full_Graph(nn.Module):
