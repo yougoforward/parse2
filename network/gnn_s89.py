@@ -153,7 +153,7 @@ class Decomposition(nn.Module):
         decomp_att = torch.softmax(decomp_map, dim=1)
         decomp_att_list = torch.split(decomp_att, 1, dim=1)
         parent_att = self.parent_att(parent)
-        decomp_list = [self.relation(child_list[i], parent * decomp_att_list[i]*parent_att) for i in
+        decomp_list = [self.relation[i](child_list[i], parent * decomp_att_list[i]*parent_att) for i in
                           range(len(child_list))]
         return decomp_list, decomp_map
 
@@ -374,7 +374,7 @@ class Part_Graph(nn.Module):
                 node = self.update[i](decomp, p_node_list[i])
             elif i  in self.lower_part_list:
                 decomp = decomp_l_list[self.lower_part_list.index(i)]
-                # part_dp = self.part_dp[i-1](p_node_list[i], sum(xpp_list_list[i-1]))
+                height# part_dp = self.part_dp[i-1](p_node_list[i], sum(xpp_list_list[i-1]))
                 # node = self.update[i](decomp+part_dp*self.alpha, p_node_list[i])
                 node = self.update[i](decomp, p_node_list[i])
 
