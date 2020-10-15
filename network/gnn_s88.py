@@ -153,7 +153,7 @@ class Decomposition(nn.Module):
         decomp_att = torch.softmax(decomp_map, dim=1)
         decomp_att_list = torch.split(decomp_att, 1, dim=1)
         parent_att = self.parent_att(parent)
-        decomp_list = [self.relation(child_list[i], parent * decomp_att_list[i]*parent_att) for i in
+        decomp_list = [self.relation[i](child_list[i], parent * decomp_att_list[i]*parent_att) for i in
                           range(len(child_list))]
         return decomp_list, decomp_map
 
