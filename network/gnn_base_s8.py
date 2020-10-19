@@ -127,7 +127,7 @@ class Decoder(nn.Module):
         
         # infer with hierarchical person graph
         self.gnn_infer = GNN_infer(adj_matrix=self.adj_matrix, upper_half_node=[1, 2, 3, 4], lower_half_node=[5, 6],
-                                   in_dim=256, hidden_dim=32, cls_p=7, cls_h=3, cls_f=2)
+                                   in_dim=256, hidden_dim=10, cls_p=7, cls_h=3, cls_f=2)
         
     def forward(self, x):
         x_dsn = self.layer_dsn(x[-2])
