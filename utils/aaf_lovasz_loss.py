@@ -46,7 +46,7 @@ class LIP_LR_AAF_Loss(nn.Module):
         self.criterion = torch.nn.CrossEntropyLoss(ignore_index=ignore_index, weight=self.weight)
 
         self.num_classes=num_classes
-        self.label_relax_loss = ImgWtLossSoftNLL(classes=num_classes, ignore_index=ignore_index, weights=self.weight, upper_bound=1.0,
+        self.label_relax_loss = ImgWtLossSoftNLL(classes=num_classes, ignore_index=ignore_index, weights=None, upper_bound=1.0,
                                                  norm=False)
         self.aaf_loss = AAF_Loss(ignore_index, num_classes)
 

@@ -44,7 +44,6 @@ class ConvGRU(nn.Module):
         cnm = torch.tanh(cc_cnm)
 
         h_next = (1 - update_gate) * h_cur + update_gate * cnm
-        # h_next = h_cur + update_gate * cnm
         return h_next
     
 class DecoderModule(nn.Module):
