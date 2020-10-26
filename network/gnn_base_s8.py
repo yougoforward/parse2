@@ -89,7 +89,9 @@ class GNN_infer(nn.Module):
             BatchNorm2d(hidden_dim * cls_f), nn.ReLU(inplace=False))
 
         # node supervision
-        self.node_seg = nn.Conv2d(hidden_dim, 1, 1)
+        self.node_seg_f = nn.ModuleList([nn.Conv2d(hidden_dim, 1, 1)]*cls_f)
+        self.node_seg_h = nn.ModuleList([nn.Conv2d(hidden_dim, 1, 1)]*cls_h)
+        self.node_seg_p = nn.ModuleList([nn.Conv2d(hidden_dim, 1, 1)]*cls_p)
 
     def forward(self, xp, xh, xf):
         # gnn inference at stride 8
@@ -99,9 +101,9 @@ class GNN_infer(nn.Module):
         p_node_list = list(torch.split(self.p_conv(xp), self.hidden_dim, dim=1))
         
         # node supervision
-        f_seg = torch.cat([self.node_seg(node) for node in f_node_list], dim=1)
-        h_seg = torch.cat([self.node_seg(node) for node in h_node_list], dim=1)
-        p_seg = torch.cat([self.node_seg(node) for node in p_node_list], dim=1)
+        f_seg = torch.cat([self.node_seg_f[i](f_node_list[i]) for i in range(self.cls_f)], dim=1)
+        h_seg = torch.cat([self.node_seg_h[i](h_node_list[i]) for i in range(self.cls_h)], dim=1)
+        p_seg = torch.cat([self.node_seg_p[i](p_node_list[i]) for i in range(self.cls_p)], dim=1)
 
         return [p_seg], [h_seg], [f_seg], [], [], [
             ], [], [], [], []

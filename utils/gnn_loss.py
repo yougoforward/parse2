@@ -897,27 +897,25 @@ class gnn_loss_dp32(nn.Module):
             pred = F.softmax(input=pred, dim=1)
             loss.append(loss_ce + lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
 
-        # loss = sum(loss)
+        loss = sum(loss)
         # half body
         loss_hb = []
         for i in range(len(preds[1])):
             pred_hb = F.interpolate(input=preds[1][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_ce = self.criterion2(pred_hb, targets[1].long())
             pred_hb = F.softmax(input=pred_hb, dim=1)
-            loss_hb.append(loss_ce + lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
+            loss_hb.append(lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
                                       only_present=self.only_present))
-        # loss_hb = sum(loss_hb)
+        loss_hb = sum(loss_hb)
 
 
         # full body
         loss_fb = []
         for i in range(len(preds[2])):
             pred_fb = F.interpolate(input=preds[2][i], size=(h, w), mode='bilinear', align_corners=True)
-            loss_ce = self.criterion2(pred_fb, targets[2].long())
             pred_fb = F.softmax(input=pred_fb, dim=1)
-            loss_fb.append(loss_ce + lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
+            loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
                                       only_present=self.only_present))
-        # loss_fb = sum(loss_fb)
+        loss_fb = sum(loss_fb)
 
         #one hot part
         labels_p = targets[0]
@@ -1035,7 +1033,7 @@ class gnn_loss_dp32(nn.Module):
         loss_dsn = self.criterion(pred_dsn, targets[0])
         # return (sum(loss) + 0.4*sum(loss_hb) + 0.4*sum(loss_fb))/(len(preds[0]))+ 0.4 * loss_dsn + 0.1*(loss_fh_att + loss_up_att + loss_lp_att + loss_dp_att + loss_com_att)/(len(preds[3]))
         # return (loss[0] + 0.4*loss_hb[0] + 0.4*loss_fb[0]+loss[-1] + 0.4*loss_hb[-1] + 0.4*loss_fb[-1])+ 0.4 * loss_dsn + 0.2*(loss_fh_att + loss_up_att + loss_lp_att + loss_dp_att + loss_com_att)
-        return (0.4*(loss[0] + loss_hb[0] + loss_fb[0])+(loss[-1] + 0.4*loss_hb[-1] + 0.4*loss_fb[-1])) + 0.4 * loss_dsn
+        return loss + 0.4*loss_hb + 0.4*loss_fb + 0.4 * loss_dsn
     
 class gnn_loss_dp4(nn.Module):
     """Lovasz loss for Alpha process"""
