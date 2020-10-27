@@ -107,12 +107,14 @@ class GNN_infer(nn.Module):
         # f_seg = torch.cat([self.node_seg_f[i](f_node_list[i]) for i in range(self.cls_f)], dim=1)
         # h_seg = torch.cat([self.node_seg_h[i](h_node_list[i]) for i in range(self.cls_h)], dim=1)
         # p_seg = torch.cat([self.node_seg_p[i](p_node_list[i]) for i in range(self.cls_p)], dim=1)
-        
+        f_seg = []
+        h_seg = []
+        p_seg = []
         f_seg.append(torch.cat([self.node_seg(node) for node in f_node_list], dim=1))
         h_seg.append(torch.cat([self.node_seg(node) for node in h_node_list], dim=1))
         p_seg.append(torch.cat([self.node_seg(node) for node in p_node_list], dim=1))
 
-        return [p_seg], [h_seg], [f_seg], [], [], [
+        return p_seg, h_seg, f_seg, [], [], [
             ], [], [], [], []
 
 
