@@ -68,7 +68,7 @@ class gnn_loss_noatt(nn.Module):
         #lovasz loss
         lovasz_loss = lovasz_softmax_flat(*flatten_probas(pred, targets[1], self.ignore_index), only_present=self.only_present)
         #ce loss
-        loss_ce = self.criterion(pred1, targets[1])
+        loss_ce = self.criterion(pred1, targets[1].long())
         loss_final_hb = (lovasz_loss + loss_ce)
 
         # full body
@@ -86,7 +86,7 @@ class gnn_loss_noatt(nn.Module):
         #lovasz loss
         lovasz_loss = lovasz_softmax_flat(*flatten_probas(pred, targets[2], self.ignore_index), only_present=self.only_present)
         #ce loss
-        loss_ce = self.criterion(pred2, targets[2])
+        loss_ce = self.criterion(pred2, targets[2].long())
         loss_final_fb = (lovasz_loss + loss_ce)
         
         # dsn loss
