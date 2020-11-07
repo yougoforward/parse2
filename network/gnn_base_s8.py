@@ -176,6 +176,6 @@ class OCNet(nn.Module):
         return x
 
 def get_model(num_classes=20):
-    model = OCNet(Bottleneck, [3, 4, 6, 3], num_classes)  # 50
-    # model = OCNet(Bottleneck, [3, 4, 23, 3], num_classes)  # 101
+    # model = OCNet(Bottleneck, [3, 4, 6, 3], num_classes)  # 50
+    model = OCNet(Bottleneck, [3, 4, 23, 3], num_classes)  # 101
     return model
