@@ -73,7 +73,7 @@ class gnn_loss_noatt(nn.Module):
 
         # full body
         loss_fb = []
-        for i in range(len(preds[2])):
+        for i in range(len(preds[2])-1):
             pred_fb = F.interpolate(input=preds[2][i], size=(h, w), mode='bilinear', align_corners=True)
             # pred_fb = F.softmax(input=pred_fb, dim=1)
             # loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
