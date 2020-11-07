@@ -95,7 +95,7 @@ class gnn_loss_noatt(nn.Module):
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
 
-        return (0.5*loss_final+0.2*loss_final_hb+0.2*loss_final_fb + loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
+        return (loss_final+0.2*loss_final_hb+0.2*loss_final_fb + loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
 
 class gnn_loss(nn.Module):
     """Lovasz loss for Alpha process"""
