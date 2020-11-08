@@ -41,7 +41,7 @@ class gnn_loss_noatt(nn.Module):
             pred = F.interpolate(input=preds[0][i], size=(h, w), mode='bilinear', align_corners=True)
             pred = F.softmax(input=pred, dim=1)
             loss.append(lovasz_softmax_flat(*flatten_probas(pred, targets[0], self.ignore_index), only_present=self.only_present))
-            loss.append(self.criterion(pred, targets[0]))
+            # loss.append(self.criterion(pred, targets[0]))
         loss = sum(loss)
 
         #part seg loss final
@@ -60,7 +60,7 @@ class gnn_loss_noatt(nn.Module):
             pred_hb = F.softmax(input=pred_hb, dim=1)
             loss_hb.append(lovasz_softmax_flat(*flatten_probas(pred_hb, targets[1], self.ignore_index),
                                       only_present=self.only_present))
-            loss_hb.append(self.criterion(pred_hb, targets[1].long()))
+            # loss_hb.append(self.criterion(pred_hb, targets[1].long()))
         loss_hb = sum(loss_hb)
         #half seg loss final
         pred1 = F.interpolate(input=preds[1][-1], size=(h, w), mode='bilinear', align_corners=True)
@@ -79,7 +79,7 @@ class gnn_loss_noatt(nn.Module):
             pred_fb = F.softmax(input=pred_fb, dim=1)
             loss_fb.append(lovasz_softmax_flat(*flatten_probas(pred_fb, targets[2], self.ignore_index),
                                       only_present=self.only_present))
-            loss_fb.append(self.criterion(pred_fb, targets[2].long()))
+            # loss_fb.append(self.criterion(pred_fb, targets[2].long()))
         loss_fb = sum(loss_fb)
         #full seg loss final
         pred2 = F.interpolate(input=preds[2][-1], size=(h, w), mode='bilinear', align_corners=True)
