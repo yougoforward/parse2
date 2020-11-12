@@ -69,8 +69,8 @@ class gnn_loss_noatt(nn.Module):
         lovasz_loss = lovasz_softmax_flat(*flatten_probas(pred, targets[1], self.ignore_index), only_present=self.only_present)
         #ce loss
         loss_ce = self.criterion(pred1, targets[1].long())
-        # loss_final_hb = (lovasz_loss + loss_ce)
-        loss_final_hb = lovasz_loss
+        loss_final_hb = (lovasz_loss + loss_ce)
+        # loss_final_hb = lovasz_loss
 
         # full body
         loss_fb = []
@@ -88,14 +88,14 @@ class gnn_loss_noatt(nn.Module):
         lovasz_loss = lovasz_softmax_flat(*flatten_probas(pred, targets[2], self.ignore_index), only_present=self.only_present)
         #ce loss
         loss_ce = self.criterion(pred2, targets[2].long())
-        # loss_final_fb = (lovasz_loss + loss_ce)
-        loss_final_fb = lovasz_loss
+        loss_final_fb = (lovasz_loss + loss_ce)
+        # loss_final_fb = lovasz_loss
         
         # dsn loss
         pred_dsn = F.interpolate(input=preds[-1], size=(h, w), mode='bilinear', align_corners=True)
         loss_dsn = self.criterion(pred_dsn, targets[0])
 
-        return (loss_final+0.2*loss_final_hb+0.2*loss_final_fb + loss + 0.2 * loss_hb + 0.2 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
+        return (loss_final+0.4*loss_final_hb+0.4*loss_final_fb + loss + 0.4 * loss_hb + 0.4 * loss_fb)/len(preds[1]) + 0.4 * loss_dsn
 
 class gnn_loss(nn.Module):
     """Lovasz loss for Alpha process"""
