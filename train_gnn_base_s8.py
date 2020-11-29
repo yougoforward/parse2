@@ -17,7 +17,7 @@ from dataset.data_pascal import DataGenerator
 from network.gnn_base_s8 import get_model
 # from network.abrnet import get_model
 from progress.bar import Bar
-from utils.gnn_loss import gnn_loss_noatt as ABRLovaszLoss
+from utils.gnn_loss import gnn_loss_once as ABRLovaszLoss
 
 from utils.metric import *
 from utils.parallel import DataParallelModel, DataParallelCriterion
